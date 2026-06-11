@@ -1,0 +1,13 @@
+{
+  "name": "devflow",
+  "owner": {
+    "name": "kebabovicz"
+  },
+  "plugins": [
+    {
+      "name": "devflow",
+      "source": "./",
+      "description": "Manifest-driven development automation: project onboarding, live flow testing, Ralph-style autonomous task loops, iterative review, research, tracker integration, deterministic guardrails. Onboard any project with /devflow:init."
+    }
+  ]
+}
