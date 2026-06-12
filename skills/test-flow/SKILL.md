@@ -10,7 +10,8 @@ Verify the described flow against the real running services. Read `.devflow/proj
 
 1. **Understand the flow**: map "$ARGUMENTS" to concrete steps in the project's own terms — API endpoints, UI routes/actions, CLI invocations, plan/validate runs, whatever the stack exposes. Sources of truth, in order: manifest `services` + their API schemas, the code, docs mapped in `docs.map`. State your expected scenario (steps, expected outcomes, expected side effects) BEFORE executing.
 2. **Spin up**: determine the minimal environment for the flow, start via `env.up`, wait for `env.health`.
-3. **Authenticate** per `auth.recipe` if the flow touches a protected surface (no auth section configured → skip; never invent a bypass).
+3. **Authenticate** if the flow touches a protected surface: `auth.recipe` for service-level access, `auth.user_recipe` when the flow acts as a specific user (no auth section configured → skip; never invent a bypass). The flow needs a user token but `user_recipe` is empty → that's a manifest gap: report it and offer to derive the recipe WITH the user, don't burn the session reverse-engineering grants.
+4. **Check fixture preconditions**: a flow that needs data in a specific state (an order in Draft, a user with role X) checks that data exists BEFORE executing. Missing fixture → present options (seed it, set it up via API, targeted data edit with user approval) — pick one with the user, don't improvise.
 4. **Execute** step by step using the surface's natural tool: curl for HTTP, the project's e2e runner (playwright/cypress) for UI flows when one exists, the CLI itself for CLIs, plan/validate for IaC. After each step verify: outcome, response/output shape, and side effects (data state, emitted events, generated files) where checkable.
 5. **Report** as a table: step → expected → actual → ✅/❌. For failures include the failing request (method, path, body) and response verbatim.
 

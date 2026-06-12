@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — 2026-06-12
+
+Lessons from a long-running session: preconditions get budgets, drafts get a deterministic floor.
+
+- **Precondition budget in test-flow / api-tester**: environment, auth, and fixture data are preconditions, not the mission — ~10 tool calls of honest effort, then STOP and report the gap as a finding (broken recipe step, missing fixture, manifest gap) with what would fix it. An hour of auth archaeology is a failed run even if a token eventually appears. The manifest recipe is the ONLY auth path tried — no exploring alternative grants. Stale-binary awareness: a green step against an old build is a false verdict.
+- **`auth.user_recipe`** in the template: optional second recipe for a token AS A SPECIFIC USER (authorization_code/PKCE, form login, seed account) — for identity-dependent flows (ownership, role-gated transitions) when the main recipe is service-level. Empty + flow needs it → manifest gap, derive it with the user.
+- **Tracker mutations never allowlisted** (init permissions rule + doctor check): skills are advisory and long sessions drift past them — a real session created a Jira issue with no draft shown, bypassing the issue skill entirely. The permission prompt on an un-allowlisted create/edit/transition/comment/link call is the deterministic "show the payload, ask first" floor; doctor flags such tools in allowlists, read-only tracker tools remain fine. Known limit: permissive session modes (auto-approve) trade this floor away.
+- test-flow: fixture preconditions checked before execution; missing test data → options (seed / API setup / targeted edit), chosen with the user.
+
 ## 0.17.2 — 2026-06-12
 
 - sync-docs author mode: un-ignoring must never widen exposure. When an ignore rule is removed so mapped docs can be committed, every file it was protecting that stays local gets its own targeted ignore entry in the same edit, verified per file with `git check-ignore`. (Field run removed a whole-directory ignore and left a credential-bearing doc merely untracked — one `git add -A` away from a leak.)

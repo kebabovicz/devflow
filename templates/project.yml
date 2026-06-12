@@ -33,6 +33,12 @@ auth:
   # (API token, logged-in session, test account). Must work in Development without
   # human interaction (fixed OTP, seed user, etc.). No protected surface → leave empty.
   recipe: ""
+  # Optional second recipe: token AS A SPECIFIC USER (seed account) — for flows that
+  # depend on identity: ownership checks, role-gated status transitions. Needed when
+  # the main recipe is service-level (client_credentials). May be multi-step
+  # (authorization_code + PKCE, form login) — spell out every step; an agent must not
+  # have to reverse-engineer the grant. Empty = flows needing a user token will ask.
+  user_recipe: ""
 
 test:
   run: ""                    # command with a clear green/red exit code (unit/default suite)
