@@ -30,7 +30,7 @@ Read `.devflow/project.yml` → `tracker`. No manifest → stop: the project isn
    - project CLAUDE.md — only if a *pattern* changed, not for feature details.
    Large diffs: delegate to the `docs-sync` agent scoped to the changed files. Stale knowledge taxes every future agent — you still hold the change context, so fixing it now is the cheapest it will ever be.
 6. **Close the loop — gated by the user**:
-   - Present: diff summary, verification evidence, proposed commit message. **Ask before committing** — never commit on your own initiative.
+   - Present the work as a **review handoff** — format per `${CLAUDE_SKILL_DIR}/../handoff/SKILL.md` (risk-ranked attention map: judgment calls and auto-red changes first, mechanical changes as a count, two-minute re-checks with the outputs you actually observed) — plus the proposed commit message. **Ask before committing** — never commit on your own initiative.
    - After the approved commit, finish per `git.on_done`: `push` → `git push -u origin <branch>` and report the branch name; `none` → leave everything local. **Never create PRs/merge requests** unless explicitly asked — the user handles those.
    - With tracker, after the commit: propose the issue comment + target status and **ask before posting or moving**. The closing comment must carry the outcome — what was done/decided, verification evidence, commit/branch reference; a bare status transition is not a closed task (the tracker is the team's memory, this chat is not). For research/decision tasks the comment IS the deliverable. First time, ask which status means "done for dev" and record it in the manifest as `tracker.done_status`.
    - Without tracker: final report + check off the item in `ralph.todo` if it lives there.

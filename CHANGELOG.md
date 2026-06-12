@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.19.0 — 2026-06-12
+
+The human's bottleneck is verifying agent work, not producing it — handoffs now spend the reviewer's attention where the risk is. Practices borrowed from fields where the reviewer's miss is expensive: risk-based audit sampling (review effort proportional to risk), structured medical handoffs (fixed sections make omission visible), and the two-minute verifiability rule.
+
+- **New skill `/devflow:handoff`** — the format authority: 🔴 judgment calls + auto-red changes (migrations, auth, data mutation, contracts, concurrency — classified by closed rules, not self-assessment) / 🟡 derived-never-executed / 🟢 mechanical as a count / "verify in 2 minutes" with commands actually run and their observed outputs. All sections always present (empty = one honest line); honest limit stated: only the re-checks are falsifiable, the rest is self-assessment by the model that did the work. Standalone use covers work done without devflow skills or by another agent (then judgment calls are reconstructed from the diff and flagged as weaker).
+- **task**: close-the-loop presentation renders as a review handoff (format referenced from the handoff skill, not duplicated).
+- **ralph-build**: TODO result notes must record forks — `⚠ judgment call: chose X over Y`; after an autonomous run, `grep ⚠` over the TODO surfaces every decision the loop took without the user.
+- **test-flow / api-tester**: verification depth per step (response shape / status code only / side effects) — a status-only ✅ must declare itself; test-flow also names scenario-mapping interpretation choices.
+- Not touched by design: sync (✅/🔧/❓ classification already is an attention map), research (confidence grades already are the handoff), review (triage already surfaces judgment calls), doctor/config/init/issue (deterministic or gated — a handoff block there is ritual noise).
+
 ## 0.18.1 — 2026-06-12
 
 Second cold adversarial review (10 findings, all with reproductions) — all addressed:

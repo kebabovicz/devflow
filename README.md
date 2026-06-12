@@ -67,6 +67,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest |
 | A related repo moved ahead (frontend, backend, mobile, shared contracts, infra-as-code — any counterpart) | `/devflow:sync <name>` |
 | Docs drifted from the code | `/devflow:sync-docs` |
+| Work finished (with or without devflow) — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |
 | Plugin updated, manifest is behind | `/devflow:update` |
 | A typo / trivial change you can eyeball | no devflow — just ask in the session |
 
