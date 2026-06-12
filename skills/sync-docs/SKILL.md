@@ -14,6 +14,7 @@ devflow guarantees mapped docs exist and don't lie; when they don't exist yet, i
 2. **Propose the map**: existing contract docs keep their names and locations — devflow adapts to the project, not the reverse. For gaps, propose a canonical skeleton shaped by `project.type` (universal names, content per type): `architecture` (services/modules topology), `environments` (local/staging/prod, config), `contracts` (API endpoints / public interface / CLI surface), `testing` (how to verify). Only what the type warrants — a library doesn't need an environments doc.
 3. **Generate from code, on approval**: each new doc is written from what the code actually does (same claim-by-claim discipline as auditing, in reverse). No invented content: a section the code can't substantiate stays out. Write the map into `.devflow/project.yml → docs.map`.
 4. **Team truth**: new docs and newly mapped docs must be git-trackable — if a doc the user wants mapped is gitignored/untracked, surface it and propose committing it (audit it first if it predates devflow). Exception: `footprint: local` — there everything stays untracked by design.
+5. **Un-ignoring must never widen exposure**: when an ignore rule (e.g. a whole `docs/` line) has to go so mapped docs can be committed, every file that rule was protecting and that stays local gets its own targeted ignore entry IN THE SAME EDIT — a secret-bearing or personal file left merely untracked is one `git add -A` away from a leak. Verify with `git check-ignore` per remaining file before reporting done.
 
 ## Protocol
 
