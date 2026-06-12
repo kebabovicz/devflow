@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1 — 2026-06-12
+
+- sync-docs author mode: git status of a doc is determined PER FILE (`git ls-files --error-unmatch`, then `git check-ignore`), never generalized from a directory listing — first field run declared 9 docs "all committed" when 6 of them were gitignored and invisible to every clone. Plus a mandatory secret scan before any doc is mapped or proposed for commit: a hit excludes the file until cleaned, reported by location only (the same run nearly proposed committing docs with live connection-string passwords).
+
 ## 0.17.0 — 2026-06-12
 
 Docs become a guaranteed knowledge layer: devflow now ensures mapped docs exist and are team truth, not just audits them when they happen to be there.
