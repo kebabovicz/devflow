@@ -2,9 +2,15 @@
 
 **A process harness for Claude Code: development discipline for coding agents.**
 
-You set the goals and make the decisions — agents do the work: they bring up the environment, implement, verify against live services, pass review, commit by your conventions, keep your issue tracker honest, and hit a deterministic guard before destroying what must not be destroyed. Large tasks survive any session: plans and progress live in files, not in the context window (Ralph-style).
+Long agent sessions drift: "done" that only compiled, rules quietly forgotten by hour six, a careless `down -v`, onboarding from zero on every new project. devflow turns the discipline into mechanics:
 
-It is not a framework — devflow never touches your code's architecture. It is a harness around the agent: skills (processes), hooks (hard limits), and a manifest (project knowledge).
+- **skills advise** — processes for tasks, flow testing, review, tracker and docs hygiene;
+- **hooks enforce** — deterministic guards: destroying docker volumes or committing to the base branch hits a hard stop, whatever the model "thinks";
+- **the manifest knows your project** — env, auth, tests, conventions in one file; agents hardcode nothing, so the same plugin fits a microservice fleet and a weekend pet project.
+
+You set the goals and make the decisions — agents do the work: bring up the environment, implement, verify against live services, commit by your conventions, keep the tracker honest. Large tasks survive any session: plans and progress live in files, not in the context window (Ralph-style).
+
+It is not a framework — devflow never touches your code's architecture.
 
 **📖 Full guide: [docs/GUIDE.md](docs/GUIDE.md)** — why, how it works, command reference, scenarios, parallel work, troubleshooting.
 
@@ -18,7 +24,7 @@ devflow plugin (this repo, portable)        each project (thin layer)
 └── templates project.yml
 ```
 
-Agents hardcode nothing about your project — everything comes from the manifest: how to start the environment, how to obtain an auth token, how to run tests, where the docs live, which repos are related, which tracker and git conventions apply. That is what makes devflow portable across stacks — from .NET microservices to a weekend pet project. Onboarding a new project is one command: `/devflow:init` explores the repo and builds the manifest with you.
+Everything project-specific lives in the manifest: how to start the environment, obtain an auth token, run tests, where the docs live, which repos are related, which tracker and git conventions apply. Onboarding a new project is one command: `/devflow:init` explores the repo and builds the manifest with you.
 
 ## Install
 
