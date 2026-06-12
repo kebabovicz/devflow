@@ -12,12 +12,13 @@ Verify the described flow against the real running services. Read `.devflow/proj
 2. **Spin up**: determine the minimal environment for the flow, start via `env.up`, wait for `env.health`.
 3. **Authenticate** if the flow touches a protected surface: `auth.recipe` for service-level access, `auth.user_recipe` when the flow acts as a specific user (no auth section configured → skip; never invent a bypass). The flow needs a user token but `user_recipe` is empty → that's a manifest gap: report it and offer to derive the recipe WITH the user, don't burn the session reverse-engineering grants.
 4. **Check fixture preconditions**: a flow that needs data in a specific state (an order in Draft, a user with role X) checks that data exists BEFORE executing. Missing fixture → present options (seed it, set it up via API, targeted data edit with user approval) — pick one with the user, don't improvise.
-4. **Execute** step by step using the surface's natural tool: curl for HTTP, the project's e2e runner (playwright/cypress) for UI flows when one exists, the CLI itself for CLIs, plan/validate for IaC. After each step verify: outcome, response/output shape, and side effects (data state, emitted events, generated files) where checkable.
-5. **Report** as a table: step → expected → actual → ✅/❌. For failures include the failing request (method, path, body) and response verbatim.
+5. **Execute** step by step using the surface's natural tool: curl for HTTP, the project's e2e runner (playwright/cypress) for UI flows when one exists, the CLI itself for CLIs, plan/validate for IaC. After each step verify: outcome, response/output shape, and side effects (data state, emitted events, generated files) where checkable.
+6. **Report** as a table: step → expected → actual → ✅/❌. For failures include the failing request (method, path, body) and response verbatim.
 
 ## Rules
 
 - Delegate execution to the `api-tester` agent when the scenario is HTTP-based and has more than ~3 steps — keep the main context clean. Non-HTTP scenarios (UI runner, CLI, IaC) run inline or in a general-purpose subagent.
+- **Precondition budget applies on every path** (delegated or inline): environment, auth, and fixtures get ~10 tool calls of honest effort each — then stop and report the gap as a finding (what's missing, what manifest field or seed would fix it). Reverse-engineering a precondition is a manifest gap, not a challenge.
 - Never "fix" the test to match broken behavior. A mismatch between docs and behavior is a finding, not an error in your scenario — report it.
 - Tear down only what you started, and only if the user isn't using the environment interactively.
 - **Local data is persistent test state**: never `down -v` or otherwise destroy databases/volumes unless the user explicitly asks. Before risky data-mutating scenarios, offer a snapshot if the manifest defines `db.snapshot`.

@@ -5,7 +5,7 @@ disable-model-invocation: true
 
 # devflow update
 
-Compare `.devflow/project.yml` against the current template at `${CLAUDE_PLUGIN_ROOT}/templates/project.yml` and migrate the manifest forward.
+Compare `.devflow/project.yml` against the current template at `${CLAUDE_SKILL_DIR}/../../templates/project.yml` (two levels up from this skill's directory = the plugin root) and migrate the manifest forward.
 
 ## Protocol
 

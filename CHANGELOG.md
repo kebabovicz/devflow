@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.18.1 — 2026-06-12
+
+Second cold adversarial review (10 findings, all with reproductions) — all addressed:
+
+- **guard coverage**: `docker system prune --volumes` and `docker compose rm -v` (any flag cluster) now blocked; `git -c k=v commit` no longer slips past the base-branch guard (interleaved `-c`/`-C` runtime options matched); `DEVFLOW_ALLOW=1` works with leading whitespace. Full regression suite green (15 cases, incl. no-overmatch checks).
+- **`${CLAUDE_PLUGIN_ROOT}` in skill bodies** replaced with `${CLAUDE_SKILL_DIR}/../..` — the former is substituted in hooks.json but not in skill content; skills relied on model improvisation to find the plugin root (worked in practice, was not deterministic).
+- **secret scan mechanics**: detect with `grep -lE` / `grep -nE … | cut -d: -f1`, never bare `grep -n` (whose output echoes the secret); pattern list extended (connection strings with inline passwords, private key blocks) and marked non-exhaustive — doctor and sync-docs aligned.
+- **footprint:local seam closed**: the overlay's ignore entry goes to `.git/info/exclude` in local mode, never a committed `.gitignore` line.
+- test-flow: numbering fixed, precondition budget now explicit on the inline (non-HTTP) path too.
+- **honest limits told fully** (README + guard header): multi-line commands and state-changing compound commands (`checkout main && commit`) are past the floor; dangerous literals in harmless arguments block safely; "physically prevented" softened to "deterministic guard". Accepted as designed: the false-positive trade-off (doctor's registration test depends on it); no DEVFLOW_ALLOW hint added to block messages — the bypass stays user-initiated only.
+
 ## 0.18.0 — 2026-06-12
 
 Lessons from a long-running session: preconditions get budgets, drafts get a deterministic floor.

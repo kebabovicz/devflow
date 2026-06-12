@@ -2,7 +2,7 @@
 
 **A process harness for Claude Code: development discipline for coding agents.**
 
-You set the goals and make the decisions — agents do the work: they bring up the environment, implement, verify against live services, pass review, commit by your conventions, keep your issue tracker honest, and are physically prevented from destroying what must not be destroyed. Large tasks survive any session: plans and progress live in files, not in the context window (Ralph-style).
+You set the goals and make the decisions — agents do the work: they bring up the environment, implement, verify against live services, pass review, commit by your conventions, keep your issue tracker honest, and hit a deterministic guard before destroying what must not be destroyed. Large tasks survive any session: plans and progress live in files, not in the context window (Ralph-style).
 
 It is not a framework — devflow never touches your code's architecture. It is a harness around the agent: skills (processes), hooks (hard limits), and a manifest (project knowledge).
 
@@ -72,7 +72,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 
 ## Always-on protection (hooks)
 
-- **guard** — blocks destruction of docker volumes (local data is persistent test state; catches both `docker compose` and `docker-compose`) and commits to the base branch;
+- **guard** — blocks destruction of docker volumes (`compose down -v`, `compose rm -v`, `volume rm/prune`, `system prune --volumes`; both `docker compose` and `docker-compose`) and commits to the base branch;
 - **ralph-stop-gate** — a Ralph iteration cannot end with uncommitted work: code and its TODO checkmark land in one commit. *Inactive in `footprint: local` mode* — the TODO lives outside git there, the commit gate is then enforced by skill rules only.
 
-Hooks are deterministic (not prompt text), active only in projects with a manifest, and fail-open — a broken hook never paralyzes a session. Honest limit: this is a floor against accidents and model forgetfulness, not a sandbox — an arbitrary wrapper (`bash -c '…'`) can smuggle a command past the regexes. Verify hooks are actually live with `/devflow:doctor` (registration test, not just the scripts).
+Hooks are deterministic (not prompt text), active only in projects with a manifest, and fail-open — a broken hook never paralyzes a session. Honest limits: this is a floor against accidents and model forgetfulness, not a sandbox — an arbitrary wrapper (`bash -c '…'`), a multi-line command, or a compound command that changes state before acting (`git checkout main && git commit`) can get past the regexes. The trade-off cuts the safe way too: a dangerous literal inside a harmless argument (a commit message quoting a docker command) gets blocked. Verify hooks are actually live with `/devflow:doctor` (registration test, not just the scripts).
