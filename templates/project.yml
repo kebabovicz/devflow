@@ -34,7 +34,10 @@ test:
   integration: ""            # optional: separate integration/e2e suite command
 
 services: {}                 # HTTP surfaces, if any: name: { port: 0, schema: "/swagger/v1/swagger.json", depends_on: [] }
-                             # for a frontend this may be just the dev server; empty for libraries/IaC
+                             # for a frontend this may be just the dev server; empty for libraries/IaC.
+                             # port = HOST port (what an agent on this machine can actually reach).
+                             # Service behind a gateway with no host mapping (compose `expose`, k8s ClusterIP):
+                             # port: "" + comment with the gateway route — never record the container-internal port.
 
 db:
   # Only if the project has local data stores. Local data is PERSISTENT test state:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.2 — 2026-06-12
+
+- issue skill: no area/type prefixes in issue titles (`[BACKEND]`, `МОБА:`, `Bug:` …) — routing lives in `tracker.labels` and the issue type; a title prefix duplicates them and pollutes search and boards.
+- config skill: auth verification status is read from the manifest's `# UNVERIFIED` markers, never invented from session state — config is a viewer of recorded facts, and "not run in this session" is not UNVERIFIED (it would mark every validated recipe stale in every fresh session).
+- template: `services.*.port` is explicitly the HOST port. A service behind a gateway with no host mapping (compose `expose`, k8s ClusterIP) records `port: ""` plus the gateway route in a comment — never the container-internal port (found in the wild: init recorded a container's `:80` as a host port, sending agents to the gateway instead).
+
 ## 0.15.1 — 2026-06-12
 
 - issue skill: relations become REAL tracker links ("link, don't mention"). Related issues are listed in the draft with a proposed link type, created via the tracker's link mechanism right after filing (Jira `createIssueLink`, GitHub cross-reference, Linear relation), and reported; a failed link is said out loud, never silently dropped. A textual "related to ABC-12" is prose — boards, filters, and automation only see links.

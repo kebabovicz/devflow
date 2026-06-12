@@ -9,7 +9,7 @@ Read `.devflow/project.yml` → `tracker`. No manifest → stop: the project isn
 ## Protocol
 
 1. **Compose** the issue from "$ARGUMENTS" and/or the findings discussed in the conversation:
-   - **Title**: imperative, ≤ 80 chars.
+   - **Title**: imperative, ≤ 80 chars. **No area/type prefixes or tags in the title** (`[BACKEND]`, `МОБА:`, `Bug:` …) — routing lives in `tracker.labels` and the issue type; a title prefix duplicates them and pollutes search and boards.
    - **Body**: What was found (with `file:line` / request-response evidence) → Why it matters → What to do (concrete steps) → How to verify when done.
    - Suggested priority with one-line justification.
    - Write in `tracker.language`; apply `tracker.labels` and `default_issue_type` unless the task clearly warrants another type (Bug for defects).
