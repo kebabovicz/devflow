@@ -5,7 +5,17 @@ disable-model-invocation: true
 
 # devflow init
 
-**Already onboarded? — do not re-init.** If `.devflow/project.yml` exists, STOP: a second init would overwrite knowledge earned through real use (verified auth recipes, recorded statuses, notes). Say the project is already onboarded and offer the useful alternatives instead: `/devflow:doctor` (verify the init is healthy), `/devflow:config` (review current settings), `/devflow:update` (migrate the manifest after a plugin update). Proceed with re-init only if the user explicitly insists after this warning.
+**Already onboarded? — do not re-init.** If `.devflow/project.yml` exists, first check for `.devflow/INIT.md`:
+- **INIT.md exists** → this is an *unfinished* init, not a configured project. Resume from the first unchecked step in INIT.md — do not start over, do not overwrite what earlier steps already produced.
+- **No INIT.md** → STOP: a second init would overwrite knowledge earned through real use (verified auth recipes, recorded statuses, notes). Say the project is already onboarded and offer the useful alternatives instead: `/devflow:doctor` (verify the init is healthy), `/devflow:config` (review current settings), `/devflow:update` (migrate the manifest after a plugin update). Proceed with re-init only if the user explicitly insists after this warning.
+
+## Progress tracking — init must not die halfway
+
+Init is long (7 steps + Tier 2 + validation) and conversations drift. An abandoned init is the most common way a project ends up half-configured, so progress lives in a file, not in the conversation:
+
+- **First action** (right after the re-init check): write `.devflow/INIT.md` — a flat checklist of the steps below (Tier 1 items 1–7, Tier 2 if gaps were found, live validation), `- [ ]` each. Check items off as they complete.
+- **Delete `.devflow/INIT.md` only at the end**: live validation passed, or the user explicitly deferred it and every unvalidated field carries `# UNVERIFIED`. While the file exists, init is not done — a SessionStart hook will remind about it in every new session.
+- **If the user diverts mid-init** (a question, a quick fix, anything): help them, then steer back to the first unchecked item. Never silently abandon the checklist — if the user wants to stop for real, say plainly that init is unfinished, that INIT.md keeps the place, and that `/devflow:init` resumes from it.
 
 Onboard the current repository into devflow. Two tiers of generation — never mix them up:
 
@@ -51,3 +61,5 @@ NEVER implement Tier 2 silently. Present the plan, wait for approval, implement,
 ## Finish — mandatory live validation
 
 A manifest nobody has executed is a hypothesis, not a manifest. Before reporting success, actually run **every command-like field you filled**: `env.up` → health green (or dev server reachable, or `terraform validate` passes — whatever the type's exercise loop is); `auth.recipe` executed and a real token obtained (only if the auth section applies); `test.run` runs. Empty optional sections validate as nothing — they are configuration, not gaps. If the user defers validation, mark every unvalidated field with `# UNVERIFIED` in the manifest. Auth recipes that cross async boundaries (queues, outbox) must include retry/polling, not assume instant delivery.
+
+When validation passed (or was explicitly deferred with `# UNVERIFIED` markers in place): **delete `.devflow/INIT.md`** — init is complete only once the progress file is gone — and report the final state, listing any UNVERIFIED fields as the user's homework.

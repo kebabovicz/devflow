@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0 — 2026-06-12
+
+Init can no longer die halfway. An abandoned onboarding was the most common path to a half-configured project — nothing surfaced it.
+
+- **init progress lives in `.devflow/INIT.md`** (same file-based-progress pattern ralph uses for its TODO): created as the first action, steps checked off as they complete, deleted only when live validation passes or is explicitly deferred with `# UNVERIFIED` markers.
+- **New SessionStart hook `init-reminder.sh`**: a session opened in a project with a surviving INIT.md gets one deterministic context line — init is unfinished, resume with `/devflow:init`. Fail-open, never blocks, silent everywhere else.
+- **Resume instead of STOP**: re-init protection now distinguishes "configured project" (manifest, no INIT.md → STOP as before) from "unfinished init" (manifest + INIT.md → continue from the first unchecked step, keep earlier answers).
+- **Drift rule in init**: if the user diverts mid-init, help them, then steer back to the checklist; stopping for real is allowed but said out loud.
+- doctor (layer 2) and config both report a surviving INIT.md as unfinished init; doctor layer 1 checks the new hook file.
+
 ## 0.14.0 — 2026-06-12
 
 Stack-agnostic release: devflow serves any repo type, not just backends — and now says so everywhere.

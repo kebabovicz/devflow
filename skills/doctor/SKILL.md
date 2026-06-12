@@ -9,7 +9,7 @@ Read-only diagnostics: never start/stop the environment, never modify files. For
 ## Layer 1 — installation (always)
 
 - Dependencies: `git`, `jq` always; `docker` only if the project's manifest references it (env/db/services) — a frontend or IaC repo without docker is fine. Optional: `claude-squad`/`tmux`/`gh`. **Missing jq = ✗, not a warning**: guardrails fail-open and become silently inactive.
-- Plugin files: `${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh` and `${CLAUDE_PLUGIN_ROOT}/hooks/ralph-stop-gate.sh` exist and are executable.
+- Plugin files: `${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh`, `${CLAUDE_PLUGIN_ROOT}/hooks/ralph-stop-gate.sh` and `${CLAUDE_PLUGIN_ROOT}/hooks/init-reminder.sh` exist and are executable.
 - **Guard script self-test** (proves the script's logic works). IMPORTANT: the test command must NOT contain the dangerous string literally — the session's own guard hook would block the test itself. Assemble it at runtime:
   - `printf '{"tool_input":{"command":"docker volume %s"},"cwd":"%s"}' prune "<project-root>" | guard.sh` → expect exit 2;
   - same with `"$HOME"` as cwd → expect exit 0 (scoping works).
@@ -18,6 +18,7 @@ Read-only diagnostics: never start/stop the environment, never modify files. For
 
 ## Layer 2 — project (when `.devflow/project.yml` exists; otherwise note "not a devflow project" and stop after layer 1)
 
+- **`.devflow/INIT.md` present → ! unfinished init** (init tracks progress there and deletes the file on completion). List its unchecked steps; fix: resume with `/devflow:init`. The manifest may be real but unvalidated — weigh other layer-2 findings accordingly.
 - Manifest parses as YAML (`python3 -c "import yaml,sys; yaml.safe_load(open(...))"`; no pyyaml → basic structural check, mark as skipped).
 - Expected sections present: `project`, `env`, `auth`, `test`, `git`, `ralph` (missing → suggest `/devflow:update`). **Present-but-empty optional sections (auth, db, services, related_repos, tracker) = "not configured", never a failure** — many project types legitimately don't need them.
 - List all `# TODO` and `UNVERIFIED` markers — each is a pending item, not an error.

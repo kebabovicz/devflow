@@ -23,6 +23,7 @@ Render the manifest as compact sections (skip empty sections silently; a project
 
 Close with a status line:
 - plugin version (from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`);
+- if `.devflow/INIT.md` exists — say first: **init is unfinished** (n steps remain), resume with `/devflow:init`;
 - count of `# TODO` / `UNVERIFIED` markers in the manifest, listed if any — each is a setting nobody confirmed yet;
 - missing template sections → suggest `/devflow:update`; suspected misconfiguration → suggest `/devflow:doctor`.
 
