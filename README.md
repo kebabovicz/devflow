@@ -64,7 +64,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | A finding worth keeping came out of a test or discussion | `/devflow:issue <finding>` — draft → your approval → tracker issue |
 | Large task (multiple commits/sessions) | `/devflow:ralph-plan <goal>` → review the TODO → `/loop /devflow:ralph-build` |
 | Polish code "until 10/10" | `/devflow:review [branch \| PR]` — review→fix→re-review loop against your project's own rules |
-| Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest |
+| Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest; heavy multi-angle digs ask before spending, `quick <question>` for a cheap single-pass answer |
 | A related repo moved ahead (frontend, backend, mobile, shared contracts, infra-as-code — any counterpart) | `/devflow:sync <name>` |
 | Docs drifted from the code | `/devflow:sync-docs` |
 | Work finished (with or without devflow) — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |

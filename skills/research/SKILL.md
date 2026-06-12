@@ -1,10 +1,12 @@
 ---
-description: Deep web research with built-in methodology — multiple independent sources, contrarian pass, primary sources over SEO content, confidence-graded digest. Use whenever the user asks to research something ("давай проведём ресёрч", "поресерчь", "research X", "что сейчас используют для Y"), compare technologies, find current best practices, check what's current/actual, or gather real-world experience and opinions before a decision.
+description: Deep web research with built-in methodology — multiple independent sources, contrarian pass, primary sources over SEO content, confidence-graded digest. Use whenever the user asks to research something ("давай проведём ресёрч", "поресерчь", "research X", "что сейчас используют для Y"), compare technologies, find current best practices, check what's current/actual, or gather real-world experience and opinions before a decision. Prefix the argument with "quick" for a cheap single-pass digest without subagents.
 ---
 
 # Research: $ARGUMENTS
 
 Produce a decision-grade digest, not a list of links. Works anywhere (no manifest needed); when run inside a devflow project, ground the research in its stack and constraints from `.devflow/project.yml` and CLAUDE.md.
+
+**Two depths.** Full (default) — the complete methodology below. `quick` (first word of "$ARGUMENTS") — inline only: no subagents, ~8–10 searches total, the contrarian pass shrinks to one query, triangulation is relaxed. The visible price: every quick finding MUST carry its honest confidence grade, and most will be likely/unverified — quick answers low-stakes questions, it does not back irreversible decisions. Searches are the dominant token cost of research regardless of model or effort — depth is the lever, and choosing it is the user's call.
 
 ## Before searching
 
@@ -25,7 +27,8 @@ Produce a decision-grade digest, not a list of links. Works anywhere (no manifes
 - **Contrarian pass is mandatory**: for every candidate/claim also search "X problems", "X criticism", "why we moved away from X", "X vs alternatives". A digest with no downsides found means the pass was skipped, not that none exist.
 - **Triangulate**: a claim needs 2+ independent sources to count as a finding; single-source claims are reported as such.
 - **Date every key fact** (version, post date). Flag anything that predates a major release of the subject.
-- **Heavy digs go to subagents**: 3+ sub-questions or a deep dive → fan out to general-purpose subagents (one per angle, each returns a sourced summary), synthesize in the main session. Search results are context-expensive; the user's session holds conclusions, not raw dumps.
+- **Heavy digs go to subagents — behind a cost gate**: 3+ sub-questions or a deep dive → fan out to general-purpose subagents (one per angle), synthesize in the main session. **Announce before fanning out and ask**: the angles found, how many subagents, and that this is the expensive path (a 3-agent dig runs on the order of 100–200k tokens) — full or quick is the user's spending decision, not yours. Single-angle questions skip the gate.
+- **Subagent budget: ~15 tool calls each.** Budget spent → synthesize from what was gathered and name what stayed uncovered; never dig past it. Subagents return compressed, sourced conclusions — search results are context-expensive, the user's session holds conclusions, not raw dumps.
 
 ## Output — the digest
 

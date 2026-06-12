@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.1 — 2026-06-12
+
+First field run of `/devflow:research` (3 subagents, 26–40 tool calls each, ~175k tokens) — quality was right, the spend was uninformed consent. Searches dominate research cost regardless of model/effort, so depth becomes an explicit, user-controlled lever:
+
+- **Cost gate before fan-out**: 3+ angles → the skill announces the plan (angles, subagent count, that this is the ~100–200k-token path) and asks full vs quick before spawning. Single-angle questions skip the gate.
+- **Subagent budget ~15 tool calls** (precondition-budget pattern): budget spent → synthesize from what was gathered and name what stayed uncovered; return compressed sourced conclusions, never page retellings.
+- **`quick` mode** (`/devflow:research quick <q>`): inline, no subagents, ~8–10 searches, contrarian pass shrunk to one query — and therefore every finding must carry its honest (mostly weaker) confidence grade. For low-stakes questions, never for irreversible decisions; full stays the default.
+
 ## 0.19.0 — 2026-06-12
 
 The human's bottleneck is verifying agent work, not producing it — handoffs now spend the reviewer's attention where the risk is. Practices borrowed from fields where the reviewer's miss is expensive: risk-based audit sampling (review effort proportional to risk), structured medical handoffs (fixed sections make omission visible), and the two-minute verifiability rule.
