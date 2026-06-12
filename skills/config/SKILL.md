@@ -4,7 +4,7 @@ description: Show the current devflow configuration of this project in a readabl
 
 # devflow config
 
-Read-only view of how devflow is configured for this project. Source of truth: `.devflow/project.yml`. No manifest → say the project isn't onboarded and point to `/devflow:init`; do not invent a configuration.
+Read-only view of how devflow is configured for this project. Source of truth: `.devflow/project.yml`, plus `.devflow/project.local.yml` overlaid if present (machine-local values — win over the manifest; mark them `(local)` in the output). No manifest → say the project isn't onboarded and point to `/devflow:init`; do not invent a configuration.
 
 ## Output — grouped, human-readable, no YAML dumps
 

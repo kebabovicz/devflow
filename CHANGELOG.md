@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.17.0 — 2026-06-12
+
+Docs become a guaranteed knowledge layer: devflow now ensures mapped docs exist and are team truth, not just audits them when they happen to be there.
+
+- **sync-docs author mode**: empty `docs.map` (or mapped files missing) → inventory existing docs (classifying contract / reference / personal note, checking git status of each), propose a map that keeps the project's own names and locations, and for gaps generate a canonical skeleton shaped by `project.type` (architecture / environments / contracts / testing) — written FROM CODE with the same claim-by-claim discipline as auditing, as ordinary committed project files. No invented content, no devflow-private formats.
+- **Team-truth rule for mapped docs** (doctor): every `docs.map` file must exist and be git-tracked — an untracked or gitignored mapped doc is one person's notes that teammates never see. `footprint: local` exempt by design.
+- init step 8: propose the map from docs found during exploration (tracked contracts only), point to author mode when there's nothing usable; never blocks init.
+
+## 0.16.0 — 2026-06-12
+
+Machine-local overlay: team truth and machine truth no longer share a file.
+
+- **New `.devflow/project.local.yml`** — sparse overlay with the same structure as the manifest, gitignored, overlaid on top (local wins). For values true only on one computer; the committed manifest stays valid for every teammate.
+- **`related_repos` split**: identity (`url`, `branch`, `relationship`) is committed; the absolute local `path` lives in the overlay under the same key. An absolute path in a committed manifest was a bug waiting for the second contributor. Solo projects may still keep `path` in the manifest.
+- sync resolves the path overlay-first, asks once if missing and writes the answer to the overlay (never the manifest), offers to clone from `url` when the repo isn't on this machine.
+- config renders overlay values marked `(local)`; doctor treats "identity present, not cloned here" as ℹ, and flags a committed `path` in a multi-contributor repo.
+- init writes paths to the overlay from the start and adds the `.gitignore` entry.
+
 ## 0.15.3 — 2026-06-12
 
 - doctor: mandatory secret scan in layer 2 — manifest and `.claude/settings*.json` checked for credential patterns (Atlassian/GitHub/GitLab/AWS tokens, basic-auth in curl, literal Bearer). A hit is ✗ critical with a revocation demand: a secret that sat in plaintext is compromised, deleting the line is not enough. The secret itself is never printed, not even a prefix — pattern name and location only. (The check existed only as model improvisation — it caught a live token in the wild; now it's deterministic protocol.)

@@ -5,7 +5,9 @@ disable-model-invocation: true
 
 # Sync with related repo: $ARGUMENTS
 
-Read `.devflow/project.yml` → `related_repos`. No manifest → stop: the project isn't onboarded, point to `/devflow:init`. "$ARGUMENTS" names which one (empty + single entry → use it; empty + several → ask). No `related_repos` configured → ask the user for path/branch/relationship and write it into the manifest.
+Read `.devflow/project.yml` → `related_repos`, then overlay `.devflow/project.local.yml` if present (same structure, machine-local values win). No manifest → stop: the project isn't onboarded, point to `/devflow:init`. "$ARGUMENTS" names which one (empty + single entry → use it; empty + several → ask). No `related_repos` configured → ask the user for url/branch/relationship and write it into the manifest.
+
+**Resolving the repo's local path**: overlay `path` → manifest `path` → neither set or the directory doesn't exist on this machine → ask the user once and write the answer to `.devflow/project.local.yml` (NEVER the committed manifest — paths are machine truth, identity is team truth). Make sure the overlay file is gitignored; offer to clone from `url` if the repo isn't on this machine at all.
 
 ## Protocol
 
