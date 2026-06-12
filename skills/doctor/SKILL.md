@@ -23,6 +23,7 @@ Read-only diagnostics: never start/stop the environment, never modify files. For
 - Expected sections present: `project`, `env`, `auth`, `test`, `git`, `ralph` (missing → suggest `/devflow:update`). **Present-but-empty optional sections (auth, db, services, related_repos, tracker) = "not configured", never a failure** — many project types legitimately don't need them.
 - List all `# TODO` and `UNVERIFIED` markers — each is a pending item, not an error.
 - Committed permissions: `.claude/settings.json` exists with an allowlist; if permissions live only in gitignored `settings.local.json` → warn (teammates won't get them).
+- **Secret scan — mandatory**: grep `.devflow/project.yml`, `.claude/settings.json`, `.claude/settings.local.json` for credential patterns (`ATATT` Atlassian, `ghp_`/`github_pat_` GitHub, `glpat-` GitLab, `AKIA` AWS, `sk-` API keys, `curl -u user:password`, `Bearer <literal>`). Any hit → ✗ critical: name the file and line, demand revocation (a secret that sat in plaintext is compromised — removing the line is not enough), point to the proper channel (MCP OAuth / env vars). **Never print the secret itself — not even a prefix or suffix; show only the pattern name and location.**
 - `related_repos` paths exist on disk.
 - Working tree on `git.base_branch`? Just informational — flag uncommitted manifest/doc changes.
 

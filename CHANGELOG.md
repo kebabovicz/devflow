@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.3 — 2026-06-12
+
+- doctor: mandatory secret scan in layer 2 — manifest and `.claude/settings*.json` checked for credential patterns (Atlassian/GitHub/GitLab/AWS tokens, basic-auth in curl, literal Bearer). A hit is ✗ critical with a revocation demand: a secret that sat in plaintext is compromised, deleting the line is not enough. The secret itself is never printed, not even a prefix — pattern name and location only. (The check existed only as model improvisation — it caught a live token in the wild; now it's deterministic protocol.)
+
 ## 0.15.2 — 2026-06-12
 
 - issue skill: no area/type prefixes in issue titles (`[BACKEND]`, `МОБА:`, `Bug:` …) — routing lives in `tracker.labels` and the issue type; a title prefix duplicates them and pollutes search and boards.
