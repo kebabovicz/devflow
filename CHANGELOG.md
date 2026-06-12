@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.1 — 2026-06-12
+
+- issue skill: relations become REAL tracker links ("link, don't mention"). Related issues are listed in the draft with a proposed link type, created via the tracker's link mechanism right after filing (Jira `createIssueLink`, GitHub cross-reference, Linear relation), and reported; a failed link is said out loud, never silently dropped. A textual "related to ABC-12" is prose — boards, filters, and automation only see links.
+
 ## 0.15.0 — 2026-06-12
 
 Init can no longer die halfway. An abandoned onboarding was the most common path to a half-configured project — nothing surfaced it.
