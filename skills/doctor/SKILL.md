@@ -35,6 +35,7 @@ Read-only diagnostics: never start/stop the environment, never modify files. For
 - `test.run` defined → ask the user before running (can be slow), report green/red.
 - Tracker configured → verify its MCP tools are reachable (lightweight call, e.g. fetch one issue); not authenticated → fix-hint `/mcp`.
 - `docs.confluence.site` configured → verify Confluence MCP tools are reachable (lightweight read, e.g. fetch one mapped page); not authenticated → fix-hint `/mcp`.
+- **Remote base-branch protection**: the local guard is a floor on this machine — the real wall is server-side. GitHub remote + `gh` available → `gh api "repos/<owner>/<repo>/branches/<base_branch>/protection"`: 200 = ✓ protected; 404 = ! recommend enabling branch protection (require MRs, block direct pushes); GitLab + `glab` → the equivalent check. Other remotes / no CLI / no permission to read protection → mark skipped, never guess.
 
 ## Report
 

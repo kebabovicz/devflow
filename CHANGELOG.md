@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0 — 2026-07-02
+
+- **guard: uncommitted work is not disposable** (Guard 5): `git reset --hard` and forced `git clean` (`-f`/`--force`, any flag cluster) are blocked in devflow projects — the working-tree analog of the volume policy, same `DEVFLOW_ALLOW=1` escape on explicit user request. Soft/mixed resets and `git clean -n` dry runs pass. 9 new regression cases (43 total).
+- **doctor full: remote base-branch protection** — the local guard is a floor on this machine; doctor now checks the server-side wall: GitHub (`gh api …/branches/<base>/protection`) or GitLab (`glab`), recommending protection when absent; no CLI/permission/other remote → honestly skipped, never guessed.
+- **ralph-build: blocked items must not rot** — when the loop stops on blockers, each `## Blocked` item is offered to `/devflow:issue` (the recorded question + what the iteration learned is the finding), filed keys noted back into the TODO; without a tracker the final report lists them as the user's decision queue.
+- Deferred by choice: `on_done: pr` (auto-created MRs) — later; Windows hooks — later.
+
 ## 0.21.0 — 2026-07-02
 
 Anti-drift and self-checking: conventions in context from token zero, live validation on demand, the plugin lints itself.

@@ -80,7 +80,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 
 ## Always-on protection (hooks)
 
-- **guard** — blocks destruction of docker volumes (`compose down -v`, `compose rm -v`, `volume rm/prune`, `system prune --volumes`; both `docker compose` and `docker-compose`) and the three ways history lands on the base branch: commits on it, pushes to it (`push origin <base>`, `HEAD:<base>`, refspec deletion), and local merges/cherry-picks into it (`git pull` on base stays allowed — that's the sanctioned update);
+- **guard** — blocks destruction of docker volumes (`compose down -v`, `compose rm -v`, `volume rm/prune`, `system prune --volumes`; both `docker compose` and `docker-compose`); the three ways history lands on the base branch: commits on it, pushes to it (`push origin <base>`, `HEAD:<base>`, refspec deletion), and local merges/cherry-picks into it (`git pull` on base stays allowed — that's the sanctioned update); and destruction of uncommitted work (`git reset --hard`, `git clean -f`);
 - **ralph-stop-gate** — a Ralph iteration cannot end with uncommitted work: code and its TODO checkmark land in one commit. *Inactive in `footprint: local` mode* — the TODO lives outside git there, the commit gate is then enforced by skill rules only;
 - **session-digest** — every session opened in a devflow project starts with the load-bearing conventions in context (base branch, branch/commit patterns, data policy) — deterministic anti-drift: the rules are present from token zero, not from the first skill call.
 

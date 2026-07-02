@@ -75,6 +75,17 @@ check 0 "$ON_FEAT" "push branch with base prefix allowed" "git push origin mainl
 check 2 "$ON_MAIN" "bare push while on base blocked"    "git push"
 check 0 "$ON_FEAT" "bare push on feature allowed"       "git push"
 
+echo "guard: working-tree destruction"
+check 2 "$ON_FEAT" "reset --hard blocked"               "git reset --hard"
+check 2 "$ON_FEAT" "reset --hard HEAD~1 blocked"        "git reset --hard HEAD~1"
+check 0 "$ON_FEAT" "mixed reset allowed"                "git reset HEAD~1"
+check 0 "$ON_FEAT" "soft reset allowed"                 "git reset --soft HEAD~1"
+check 2 "$ON_FEAT" "clean -fd blocked"                  "git clean -fd"
+check 2 "$ON_FEAT" "clean --force blocked"              "git clean --force -d"
+check 0 "$ON_FEAT" "clean -n (dry run) allowed"         "git clean -n -d"
+check 0 "$ON_FEAT" "DEVFLOW_ALLOW=1 reset --hard allowed" "DEVFLOW_ALLOW=1 git reset --hard"
+check 0 "$PLAIN"   "reset --hard outside devflow project allowed" "git reset --hard"
+
 echo "guard: merges into base"
 check 2 "$ON_MAIN" "merge while on base blocked"        "git merge feature/x"
 check 0 "$ON_FEAT" "merge base into feature allowed"    "git merge main"

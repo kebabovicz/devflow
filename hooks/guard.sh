@@ -122,4 +122,17 @@ if printf '%s' "$cmd" | grep -qE "$(git_cmd_re '(merge|cherry-pick)')"; then
   fi
 fi
 
+# ── Guard 5: uncommitted work is not disposable ─────────────────────────────
+# `git reset --hard` and `git clean -f…` destroy uncommitted changes and
+# untracked files — the working-tree analog of `down -v`. Same policy: only on
+# explicit user request. Soft/mixed resets and `git clean -n` (dry run) pass.
+if printf '%s' "$cmd" | grep -qE "$(git_cmd_re 'reset([[:space:]]+[^|;&[:space:]]+)*[[:space:]]+--hard')"; then
+  echo "devflow guard: 'git reset --hard' is blocked — it destroys uncommitted work. If the user explicitly asked to discard changes, re-run prefixed with DEVFLOW_ALLOW=1." >&2
+  exit 2
+fi
+if printf '%s' "$cmd" | grep -qE "$(git_cmd_re 'clean')[^|;&]*[[:space:]](-[A-Za-z]*f|--force)"; then
+  echo "devflow guard: 'git clean' with force is blocked — it deletes untracked files (uncommitted work). Preview with 'git clean -n'; if the user explicitly asked for the cleanup, re-run prefixed with DEVFLOW_ALLOW=1." >&2
+  exit 2
+fi
+
 exit 0

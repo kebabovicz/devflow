@@ -27,7 +27,7 @@ The plugin (this repository)         Each project
 └── templates/ — manifest template
 ```
 
-**Guardrails (hooks)** — hard limits that work deterministically (the model cannot "forget" them; Claude Code itself enforces them): destroying docker volumes with data (`down -v`, `volume rm/prune`) and landing history on the base branch by any local route — commit on it, push to it, merge/cherry-pick into it (`git pull` on base stays allowed: updating base from origin is the sanctioned flow). Active only in projects with a manifest; the escape hatch is a `DEVFLOW_ALLOW=1` prefix, which agents may use only when you explicitly asked for the blocked action. Scripts are fail-open: any error means allow — a broken guard never paralyzes sessions.
+**Guardrails (hooks)** — hard limits that work deterministically (the model cannot "forget" them; Claude Code itself enforces them): destroying docker volumes with data (`down -v`, `volume rm/prune`); landing history on the base branch by any local route — commit on it, push to it, merge/cherry-pick into it (`git pull` on base stays allowed: updating base from origin is the sanctioned flow); destroying uncommitted work (`git reset --hard`, forced `git clean`). Active only in projects with a manifest; the escape hatch is a `DEVFLOW_ALLOW=1` prefix, which agents may use only when you explicitly asked for the blocked action. Scripts are fail-open: any error means allow — a broken guard never paralyzes sessions.
 
 Principles:
 - **The manifest is the single source of project specifics.** An agent reads the yml and knows how to start the environment, get a token, find the docs.

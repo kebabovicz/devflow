@@ -25,4 +25,4 @@ Read `.devflow/project.yml`; the TODO lives at `ralph.todo`, specs at `ralph.spe
 ## Loop discipline
 
 - ONE task per invocation. Finishing early is success, not an invitation to start the next task — the loop will call you again.
-- All `## Blocked` and nothing buildable → report the blockers and stop the loop instead of churning.
+- All `## Blocked` and nothing buildable → report the blockers and stop the loop instead of churning. **Blocked items must not rot silently**: with a tracker configured, offer `/devflow:issue` for each blocked item — the recorded question and what the iteration learned is the finding; after filing, note the issue key next to the item in the TODO. Without a tracker, the final report lists every blocked item as the user's decision queue.
