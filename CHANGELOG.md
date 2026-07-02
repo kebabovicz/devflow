@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.3 — 2026-07-02
+
+- **ralph-build: loop end = handoff** — when a run finishes (TODO fully checked, or stopped on blockers), the loop offers a review handoff for the whole task branch, with the TODO's `⚠ judgment call` notes feeding the 🔴 section. Closes the last scenario where the user had to remember to ask "что мне проверить" after an autonomous run — inside the task cycle the handoff was already built in, outside devflow the standalone skill auto-invokes on intent.
+
 ## 0.22.2 — 2026-07-02
 
 - **session-digest: conditional state lines** — the digest gains two lines that print ONLY when actionable: an unfinished ralph TODO (`N unchecked, M blocked — ralph-build continues; blocked items need the user`) and unconfirmed manifest markers (`N UNVERIFIED, M TODO — /devflow:revalidate`). Rationale: started large work and unsettled settings were invisible at session start until asked; and a line that appears only when something needs attention gets read, while an always-on line gets skimmed — so the unconditional part stays at exactly 3 lines, and a clean project adds nothing. Deliberately NOT added: env/auth/test commands and tracker details (skills read the manifest on demand — a context copy would drift from the file), git status (the harness already provides it), code style (CLAUDE.md's job).
