@@ -44,4 +44,34 @@ if [ -n "$base" ]; then
   echo "$line."
 fi
 echo "devflow data: local volumes are persistent test state — never destroy them without an explicit user request (hook-guarded)."
+
+# ── Conditional state lines — printed ONLY when something needs attention. ──
+# A line that appears only when actionable gets read; a line that is always
+# there gets skimmed. When the project is clean, the digest stays 3 lines.
+
+# Ralph loop state: started large work must not be invisible at session start.
+todo=$(yml_value todo)
+[ -z "$todo" ] && todo=".devflow/TODO.md"
+if [ -f "$cwd/$todo" ]; then
+  unchecked=$(grep -cE '^[[:space:]]*- \[ \]' "$cwd/$todo" 2>/dev/null) || unchecked=0
+  blocked=$(awk '/^## Blocked/{b=1;next} /^## /{b=0} b && /^[[:space:]]*-/{n++} END{print n+0}' "$cwd/$todo" 2>/dev/null) || blocked=0
+  if [ "${unchecked:-0}" -gt 0 ] || [ "${blocked:-0}" -gt 0 ]; then
+    line="devflow ralph: $unchecked unchecked task(s)"
+    [ "${blocked:-0}" -gt 0 ] && line="$line, $blocked blocked"
+    echo "$line in $todo — /devflow:ralph-build continues the loop; blocked items need the user."
+  fi
+fi
+
+# Manifest hygiene: unconfirmed settings should nag quietly until settled.
+unver=$(grep -cE '#[[:space:]]*UNVERIFIED' "$manifest" 2>/dev/null) || unver=0
+todos=$(grep -cE '#[[:space:]]*TODO' "$manifest" 2>/dev/null) || todos=0
+if [ "${unver:-0}" -gt 0 ] || [ "${todos:-0}" -gt 0 ]; then
+  parts=""
+  [ "${unver:-0}" -gt 0 ] && parts="$unver UNVERIFIED"
+  if [ "${todos:-0}" -gt 0 ]; then
+    [ -n "$parts" ] && parts="$parts, "
+    parts="$parts$todos TODO"
+  fi
+  echo "devflow manifest: $parts marker(s) — /devflow:revalidate executes and re-marks unverified fields; TODO fields need values (edit the manifest or just ask)."
+fi
 exit 0

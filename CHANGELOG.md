@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.2 — 2026-07-02
+
+- **session-digest: conditional state lines** — the digest gains two lines that print ONLY when actionable: an unfinished ralph TODO (`N unchecked, M blocked — ralph-build continues; blocked items need the user`) and unconfirmed manifest markers (`N UNVERIFIED, M TODO — /devflow:revalidate`). Rationale: started large work and unsettled settings were invisible at session start until asked; and a line that appears only when something needs attention gets read, while an always-on line gets skimmed — so the unconditional part stays at exactly 3 lines, and a clean project adds nothing. Deliberately NOT added: env/auth/test commands and tracker details (skills read the manifest on demand — a context copy would drift from the file), git status (the harness already provides it), code style (CLAUDE.md's job).
+
 ## 0.22.1 — 2026-07-02
 
 First execution of `tests/INIT-CHECKLIST.md` (react-vite + monorepo-mix, scripted subagent dry-runs): **both fixtures PASS every criterion** — correct type detection (incl. the monorepo one-root-manifest rules), no irrelevant interview questions, honest `# UNVERIFIED` on every unproven claim, clean machine-truth scan, correct INIT.md lifecycle. The runs surfaced 7 friction points in the init skill text (4 found independently by both agents); all fixed:

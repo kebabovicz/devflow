@@ -49,6 +49,42 @@ check "exits 0 with a git-less manifest" "$rc"
 ! printf '%s' "$out" | grep -q 'base branch'
 check "no git line when git section is absent" "$?"
 
+# Conditional state lines — silent when clean, present when actionable.
+out=$(run "$PROJ")
+! printf '%s' "$out" | grep -q 'devflow ralph:'
+check "no ralph line without a TODO file" "$?"
+! printf '%s' "$out" | grep -q 'devflow manifest:'
+check "no marker line on a clean manifest" "$?"
+
+cat > "$PROJ/.devflow/TODO.md" <<'EOF'
+- [x] task one — done
+- [ ] task two
+- [ ] task three
+## Blocked
+- task four: waiting on user answer
+EOF
+out=$(run "$PROJ")
+printf '%s' "$out" | grep -q 'devflow ralph: 2 unchecked task(s), 1 blocked'
+check "ralph line counts unchecked and blocked" "$?"
+
+printf -- '- [x] all done\n' > "$PROJ/.devflow/TODO.md"
+out=$(run "$PROJ")
+! printf '%s' "$out" | grep -q 'devflow ralph:'
+check "no ralph line when TODO is fully checked" "$?"
+
+cat > "$PROJ/.devflow/project.yml" <<'EOF'
+git:
+  base_branch: develop
+env:
+  up: "npm run dev"  # UNVERIFIED — deferred
+  health: []         # UNVERIFIED
+auth:
+  recipe: ""         # TODO: clarify
+EOF
+out=$(run "$PROJ")
+printf '%s' "$out" | grep -q 'devflow manifest: 2 UNVERIFIED, 1 TODO'
+check "marker line counts UNVERIFIED and TODO" "$?"
+
 echo
 echo "session-digest.test.sh: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
