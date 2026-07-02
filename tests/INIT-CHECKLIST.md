@@ -46,7 +46,10 @@ has hallucinated a validation — that is a failed check.
 
 Append a line to the table below (newest first). A ✗ on any pass criterion is a
 bug in the init skill — file/fix it before shipping the change that caused it.
+Runs may be live `/devflow:init` sessions or scripted subagent dry-runs (an agent
+executes the skill text with the expected answers) — note which; a dry-run
+verifies the skill text, not the interactive experience.
 
 | Date | Plugin version | Fixtures run | Result | Notes |
 |---|---|---|---|---|
-| — | — | — | — | no runs recorded yet |
+| 2026-07-02 | 0.22.0 | react-vite, monorepo-mix (subagent dry-runs, scripted answers, validation deferred) | PASS — all criteria on both | Correct types (frontend; mixed with one root manifest), no irrelevant questions, honest UNVERIFIED on every unproven claim (incl. inferred vite port), `# none` auth marker from evidence (monorepo) vs honest TODO when unknowable (react-vite's proxied API), machine-truth scan clean, INIT.md lifecycle correct. Yield: 7 skill-text friction points, all fixed in 0.22.1 (see CHANGELOG) |

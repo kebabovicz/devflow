@@ -28,7 +28,8 @@ project:
 env:
   up: ""                     # command starting the local exercise loop: docker compose up,
                              # npm run dev, a simulator boot — whatever "running" means here
-  down: ""                   # command that stops it
+  down: ""                   # command that stops it. Foreground-only dev server with no separate
+                             # stop command → leave empty with a comment: configuration, not a gap.
   health: []                 # how to know it's ready: URLs to poll, or a command with exit code
 
 auth:

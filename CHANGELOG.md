@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.22.1 — 2026-07-02
+
+First execution of `tests/INIT-CHECKLIST.md` (react-vite + monorepo-mix, scripted subagent dry-runs): **both fixtures PASS every criterion** — correct type detection (incl. the monorepo one-root-manifest rules), no irrelevant interview questions, honest `# UNVERIFIED` on every unproven claim, clean machine-truth scan, correct INIT.md lifecycle. The runs surfaced 7 friction points in the init skill text (4 found independently by both agents); all fixed:
+
+- **Step 4/5 ordering contradiction removed**: step 4 now *drafts* the manifest, step 5 reviews and *writes* — "generate, then 'before writing present a table'" was unfollowable as numbered.
+- **Protected-surface question added to the interview**: the `# none` marker's condition said "exploration + interview establish…", but the interview had no auth question — the condition was unsatisfiable through the listed questions. Now asked explicitly (confirm exploration's finding, not open-ended).
+- **Missing CLAUDE.md case specified**: create a minimal one with ONLY the devflow section, recommend built-in `/init` for the rest (was ambiguous between "write now" and "skip entirely").
+- **Deferred Tier-2 gaps persist**: postponed gap plans are recorded in `ralph.todo` before INIT.md is deleted — they used to die with the progress file, the exact knowledge loss it exists to prevent.
+- **`# UNVERIFIED` scope clarified**: covers every claim not proven live — health URLs and framework-default ports included, not just command fields.
+- **Overlay ignore entry is unconditional**: `.devflow/project.local.yml` gets its ignore entry even when the overlay is empty today — it was mandated only inside the related-repos rule, leaving a future overlay one forgotten entry from being committed.
+- Empty git history → git-flow questions go open-ended with proposed defaults (nothing to "confirm" on a young repo); template: a foreground-only dev server legitimately has `down: ""` with a comment.
+
 ## 0.22.0 — 2026-07-02
 
 - **guard: uncommitted work is not disposable** (Guard 5): `git reset --hard` and forced `git clean` (`-f`/`--force`, any flag cluster) are blocked in devflow projects — the working-tree analog of the volume policy, same `DEVFLOW_ALLOW=1` escape on explicit user request. Soft/mixed resets and `git clean -n` dry runs pass. 9 new regression cases (43 total).
