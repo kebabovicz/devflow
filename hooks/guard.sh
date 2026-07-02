@@ -56,21 +56,68 @@ if printf '%s' "$cmd" | grep -qE 'docker([[:space:]]+compose|-compose)[^|;&]*[[:
   exit 2
 fi
 
-# ── Guard 2: no commits directly on the base branch ─────────────────────────
-# Anchors tolerate leading whitespace, subshell '(' and VAR=val env prefixes,
-# plus interleaved git runtime options (-c k=v, -C path) before `commit`.
-if printf '%s' "$cmd" | grep -qE '(^|[;&|(])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*git([[:space:]]+-[cC][[:space:]]*[^[:space:]]+)*[[:space:]]+commit'; then
-  base=$(yml_value base_branch)
-  # Honor `git -C <path>`: the commit lands in THAT repo, not the session cwd.
+# Branch of the repo a git command targets (honors `git -C <path>` — the
+# action lands in THAT repo, not the session cwd).
+git_target_branch() {
   target=$(printf '%s' "$cmd" | sed -n 's/.*git[[:space:]]\{1,\}-C[[:space:]]\{1,\}\([^[:space:]]\{1,\}\).*/\1/p' | head -1)
   if [ -n "$target" ]; then
     case "$target" in /*) ;; *) target="$cwd/$target" ;; esac
   else
     target="$cwd"
   fi
-  cur=$(git -C "$target" branch --show-current 2>/dev/null)
+  git -C "$target" branch --show-current 2>/dev/null
+}
+
+# Anchored `git <subcommand>` matcher: tolerates leading whitespace, subshell
+# '(' and VAR=val env prefixes, plus interleaved git runtime options
+# (-c k=v, -C path) before the subcommand.
+git_cmd_re() {
+  printf '(^|[;&|(])[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*git([[:space:]]+-[cC][[:space:]]*[^[:space:]]+)*[[:space:]]+%s' "$1"
+}
+
+# ── Guard 2: no commits directly on the base branch ─────────────────────────
+if printf '%s' "$cmd" | grep -qE "$(git_cmd_re commit)"; then
+  base=$(yml_value base_branch)
+  cur=$(git_target_branch)
   if [ -n "$base" ] && [ -n "$cur" ] && [ "$cur" = "$base" ]; then
     echo "devflow guard: committing directly on '$base' is blocked — create a task branch per the manifest git conventions (branch_pattern). If the user explicitly asked to commit on '$base', re-run prefixed with DEVFLOW_ALLOW=1." >&2
+    exit 2
+  fi
+fi
+
+# ── Guard 3: no pushes that update the base branch ──────────────────────────
+# Two triggers: an explicit refspec targeting base (`push origin <base>`,
+# `HEAD:<base>`, `feature:<base>`, `:<base>` deletion, `--delete <base>`) —
+# checked textually, works even outside a repo; and any `git push` issued
+# while ON the base branch (would push base by default). Fail-safe trade-off:
+# pushing some other ref while standing on base is also blocked — rare, and
+# DEVFLOW_ALLOW=1 covers the legitimate case. Base names are matched as text:
+# a `.` in the branch name matches any char (accepted overmatch, safe way).
+if printf '%s' "$cmd" | grep -qE "$(git_cmd_re push)"; then
+  base=$(yml_value base_branch)
+  if [ -n "$base" ]; then
+    if printf '%s' "$cmd" | grep -qE "git[^|;&]*[[:space:]]push[^|;&]*[[:space:]](${base}|[^[:space:]]*:${base})([[:space:]]|\$)"; then
+      echo "devflow guard: pushing to '$base' is blocked — the base branch is updated via merge requests, not direct pushes (manifest git conventions). If the user explicitly asked to push '$base', re-run prefixed with DEVFLOW_ALLOW=1." >&2
+      exit 2
+    fi
+    cur=$(git_target_branch)
+    if [ -n "$cur" ] && [ "$cur" = "$base" ]; then
+      echo "devflow guard: 'git push' while on '$base' is blocked — it would push the base branch. Switch to a task branch first (branch_pattern). If the user explicitly asked for this push, re-run prefixed with DEVFLOW_ALLOW=1." >&2
+      exit 2
+    fi
+  fi
+fi
+
+# ── Guard 4: no merges into the base branch ─────────────────────────────────
+# `git merge` / `git cherry-pick` create commits without `git commit`, so on
+# the base branch they land history past Guard 2. `git pull` stays allowed —
+# updating base from origin is the sanctioned flow (known limit:
+# `git pull origin <feature>` can merge a feature into base past this guard).
+if printf '%s' "$cmd" | grep -qE "$(git_cmd_re '(merge|cherry-pick)')"; then
+  base=$(yml_value base_branch)
+  cur=$(git_target_branch)
+  if [ -n "$base" ] && [ -n "$cur" ] && [ "$cur" = "$base" ]; then
+    echo "devflow guard: merging/cherry-picking while on '$base' is blocked — base is updated via merge requests, not local merges. If the user explicitly asked for this, re-run prefixed with DEVFLOW_ALLOW=1." >&2
     exit 2
   fi
 fi

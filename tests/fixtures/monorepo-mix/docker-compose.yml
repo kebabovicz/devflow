@@ -1,0 +1,4 @@
+services:
+  api:
+    build: ./services/api
+    ports: ["8080:8080"]

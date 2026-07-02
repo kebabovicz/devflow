@@ -1,0 +1,7 @@
+{
+  "name": "web",
+  "private": true,
+  "scripts": { "dev": "vite", "test": "vitest run" },
+  "dependencies": { "react": "^18.3.0" },
+  "devDependencies": { "vite": "^5.4.0", "vitest": "^2.0.0" }
+}

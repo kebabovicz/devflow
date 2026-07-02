@@ -12,7 +12,7 @@ Render the manifest as compact sections (skip empty sections silently; a project
 
 - **Project**: name, stack, type (backend/frontend/mobile/library/infra/mixed), footprint (committed / local — with one line on what that means).
 - **Environment**: how it starts/stops, health checks, services and their ports.
-- **Auth**: the recipe in one line (steps, not commands) + its verification status **read from the manifest's markers**: a field carrying `# UNVERIFIED` → UNVERIFIED, otherwise VERIFIED (init validates live before writing). Never invent a status from session state — "not run in this session" is not UNVERIFIED.
+- **Auth**: the recipe in one line (steps, not commands) + its verification status **read from the manifest's markers**: a field carrying `# UNVERIFIED` → UNVERIFIED, otherwise VERIFIED (init validates live before writing). A `# none` marker → render "none — no protected surface (confirmed)"; empty with NO marker → "not configured (never asked or deferred)" — don't skip the section silently in either of these cases. Never invent a status from session state — "not run in this session" is not UNVERIFIED.
 - **Tests**: unit/integration commands.
 - **Data policy**: persistent or disposable; snapshot/restore if configured.
 - **Git conventions**: base branch, branch pattern, commit pattern, what happens on done.

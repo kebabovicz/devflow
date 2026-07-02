@@ -8,7 +8,7 @@ Iterative review-fix-review loop. Scope from "$ARGUMENTS": a branch (diff vs `gi
 
 ## Criteria — the project's rules outrank generic taste
 
-1. Load the project's own rules first: CLAUDE.md and the style/security/testing docs it references. They are the rubric. A "finding" that contradicts the project's documented style is not a finding; a violation of those documented rules is always one, even if generic taste would shrug.
+1. Load the project's own rules first: **`REVIEW.md` at the repo root** (the file the built-in code-review reads as its highest-priority instruction block — severity definitions, skip rules, repo-specific checks), CLAUDE.md, and the style/security/testing docs they reference. Together they are the rubric. A "finding" that contradicts the project's documented style is not a finding; a violation of those documented rules is always one, even if generic taste would shrug. REVIEW.md skip rules apply to triage too — a finding in a skipped path/category is dropped, not presented.
 2. Warnings count as findings — the diff must build warning-clean (per the project's analyzer config).
 
 ## The loop
@@ -24,7 +24,7 @@ Iterative review-fix-review loop. Scope from "$ARGUMENTS": a branch (diff vs `gi
 - An empty pass is SUCCESS, not an invitation to look harder. Never invent nits to fill a pass.
 - A finding that reverses a fix from an earlier pass → STOP and surface the contradiction; do not oscillate.
 - Default cap: 3 passes. Not converged by then → the remaining findings are presented as a list with your honest assessment (real debt vs reviewer noise); the user decides whether to continue.
-- Each pass must cite the rule or defect class behind every finding ("CLAUDE.md says X", "unhandled null", …). "Could be nicer" without a citable basis doesn't survive triage.
+- Each pass must cite the rule or defect class behind every finding ("REVIEW.md says X", "CLAUDE.md says Y", "unhandled null", …). "Could be nicer" without a citable basis doesn't survive triage.
 
 ## Model note
 

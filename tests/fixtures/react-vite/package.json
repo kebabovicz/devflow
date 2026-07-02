@@ -1,0 +1,13 @@
+{
+  "name": "react-vite-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": { "react": "^18.3.0", "react-dom": "^18.3.0" },
+  "devDependencies": { "vite": "^5.4.0", "vitest": "^2.0.0", "@vitejs/plugin-react": "^4.3.0" }
+}

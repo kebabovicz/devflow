@@ -1,0 +1,6 @@
+{
+  "name": "monorepo-fixture",
+  "private": true,
+  "workspaces": ["apps/web"],
+  "scripts": { "dev": "npm run dev -w apps/web" }
+}

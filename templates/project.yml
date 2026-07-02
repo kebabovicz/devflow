@@ -15,6 +15,9 @@ project:
   name: ""
   stack: ""                  # e.g. ".NET microservices", "React + Vite", "Flutter", "Terraform"
   type: ""                   # backend | frontend | mobile | library | infra | mixed — set by init
+                             # mixed = monorepo: ONE manifest at the repo root. env.up brings up the
+                             # whole stack; services lists every HTTP surface across packages;
+                             # test.run is the aggregate command, per-package commands go in comments.
   # committed = devflow files (.devflow/, .claude/settings.json, CLAUDE.md section)
   #             are part of the repo — teammates get them, ralph progress survives machines.
   # local     = devflow leaves NO traces in git: files excluded via .git/info/exclude
@@ -31,7 +34,11 @@ env:
 auth:
   # Free-form recipe: how an agent gets authenticated access to the protected surface
   # (API token, logged-in session, test account). Must work in Development without
-  # human interaction (fixed OTP, seed user, etc.). No protected surface → leave empty.
+  # human interaction (fixed OTP, seed user, etc.).
+  # No protected surface at all? Say so explicitly:
+  #   recipe: ""  # none — no protected surface
+  # (init writes that marker once the answer is confirmed). A bare "" without the
+  # marker means "not established yet" — doctor and test-flow treat the two differently.
   recipe: ""
   # Optional second recipe: token AS A SPECIFIC USER (seed account) — for flows that
   # depend on identity: ownership checks, role-gated status transitions. Needed when
@@ -77,8 +84,17 @@ related_repos: {}            # repos this project must stay in sync with (used b
   #   relationship: sibling
 
 docs:
-  # Map of domain/flow -> doc file. Used by sync-docs and the definition-of-done.
-  map: {}                    # e.g. auth: docs/auth-flow.md
+  # Map of domain/flow -> doc. Used by sync-docs and the definition-of-done.
+  # Value is a file path, or an object when the flow also has a Confluence page:
+  #   auth: docs/auth-flow.md
+  #   booking: { file: docs/booking.md, confluence: "123456789" }   # page id or full URL
+  map: {}
+  confluence:
+    site: ""                 # e.g. https://yourorg.atlassian.net/wiki — empty = no Confluence integration
+    space: ""                # space key where author mode creates new pages
+    # Auth via the Atlassian MCP (OAuth) — same as the tracker; credentials never live here.
+    # Page updates are outward-facing: always draft → user approval, never allowlist
+    # Confluence mutation tools (same rule as tracker mutations).
 
 git:
   base_branch: develop                       # update this branch before starting any task
