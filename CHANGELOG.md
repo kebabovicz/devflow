@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.21.0 — 2026-07-02
+
+Anti-drift and self-checking: conventions in context from token zero, live validation on demand, the plugin lints itself.
+
+- **New SessionStart hook `session-digest.sh`**: every session opened in a devflow project starts with the load-bearing manifest facts in context — base branch (and that history on it is hook-guarded), branch/commit patterns, the persistent-data policy. Skills reload their rules only when invoked; the digest pins the core conventions between invocations — deterministic, fail-open, silent outside devflow projects. Covered by `tests/session-digest.test.sh`.
+- **New skill `/devflow:revalidate [section]`**: init's mandatory live validation, runnable on demand — executes every filled command-like field (env.up + health, auth recipes, tests on confirmation, `db.snapshot`, service host ports) and updates markers in place: pass → `# VERIFIED <date>`, fail → `# UNVERIFIED — reason` with the value kept (fixing values is an approved follow-up, never a silent rewrite mid-validation). `db.restore` is never executed. Division of labor stated: doctor is read-only and finds; revalidate executes and records. Precondition budget applies (~10 tool calls per field). Doctor and config now point their UNVERIFIED listings at it.
+- **Plugin self-lint `tests/lint.test.sh`** (runs in CI via `tests/run.sh`): skill/agent frontmatter complete, hooks.json commands exist and are executable (0.9.1's exec-bit regression is now caught mechanically), `${CLAUDE_SKILL_DIR}` references resolve (0.18.1's dangling-path class), the manifest template parses as YAML, keys the hooks grep-parse (`base_branch`, `branch_pattern`, `commit_pattern`, `todo`, `footprint`) stay unique in the template, and plugin.json's version matches the latest CHANGELOG entry.
+
 ## 0.20.0 — 2026-07-02
 
 Analysis-driven release: the hook suite becomes committed and CI-enforced, base-branch protection covers all local routes, review skills read the canonical REVIEW.md, committed files get a personal-data floor, docs sync learns Confluence, init gets fixtures and a monorepo story.

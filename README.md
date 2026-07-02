@@ -65,6 +65,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | New project (once) | `/devflow:init` |
 | "Something's broken" / new machine / after an update | `/devflow:doctor` (`full` adds live checks) |
 | "How is this project configured?" | `/devflow:config` |
+| Manifest may have drifted from reality / clear `UNVERIFIED` homework | `/devflow:revalidate` — re-runs init's live validation, updates the markers |
 | Check whether a business flow works | `/devflow:test-flow <flow>` |
 | A regular task — from the tracker or as plain text | `/devflow:task <ABC-12 \| text>` — full cycle with live acceptance checks, review, and commit/status gates |
 | A finding worth keeping came out of a test or discussion | `/devflow:issue <finding>` — draft → your approval → tracker issue |
@@ -80,6 +81,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 ## Always-on protection (hooks)
 
 - **guard** — blocks destruction of docker volumes (`compose down -v`, `compose rm -v`, `volume rm/prune`, `system prune --volumes`; both `docker compose` and `docker-compose`) and the three ways history lands on the base branch: commits on it, pushes to it (`push origin <base>`, `HEAD:<base>`, refspec deletion), and local merges/cherry-picks into it (`git pull` on base stays allowed — that's the sanctioned update);
-- **ralph-stop-gate** — a Ralph iteration cannot end with uncommitted work: code and its TODO checkmark land in one commit. *Inactive in `footprint: local` mode* — the TODO lives outside git there, the commit gate is then enforced by skill rules only.
+- **ralph-stop-gate** — a Ralph iteration cannot end with uncommitted work: code and its TODO checkmark land in one commit. *Inactive in `footprint: local` mode* — the TODO lives outside git there, the commit gate is then enforced by skill rules only;
+- **session-digest** — every session opened in a devflow project starts with the load-bearing conventions in context (base branch, branch/commit patterns, data policy) — deterministic anti-drift: the rules are present from token zero, not from the first skill call.
 
 Hooks are deterministic (not prompt text), active only in projects with a manifest, and fail-open — a broken hook never paralyzes a session. Honest limits: this is a floor against accidents and model forgetfulness, not a sandbox — an arbitrary wrapper (`bash -c '…'`), a multi-line command, or a compound command that changes state before acting (`git checkout main && git commit`) can get past the regexes. The trade-off cuts the safe way too: a dangerous literal inside a harmless argument (a commit message quoting a docker command) gets blocked. Verify hooks are actually live with `/devflow:doctor` (registration test, not just the scripts). The hook logic itself is covered by a committed regression suite — `tests/run.sh`, run in CI on every change.

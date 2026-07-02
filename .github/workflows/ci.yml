@@ -13,7 +13,9 @@ jobs:
         # -S warning: install.sh's `check && ok || warn` one-liners are safe
         # (ok/warn are printf) but trip info-level SC2015.
         run: shellcheck -S warning hooks/*.sh install.sh tests/*.sh
-      - name: hook regression suite
+      - name: pyyaml for the template-parse lint
+        run: pip install --quiet pyyaml
+      - name: hook regression suite + plugin lint
         run: bash tests/run.sh
       - name: plugin manifests are valid JSON
         run: jq -e . .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json > /dev/null
