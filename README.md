@@ -66,14 +66,14 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | "Something's broken" / new machine / after an update | `/devflow:doctor` (`full` adds live checks) |
 | "How is this project configured?" | `/devflow:config` |
 | Manifest may have drifted from reality / clear `UNVERIFIED` homework | `/devflow:revalidate` — re-runs init's live validation, updates the markers |
-| Check whether a business flow works | `/devflow:test-flow <flow>` |
+| Check whether a business flow works | `/devflow:test-flow <flow>` — `swarm` + several flows runs the suite in parallel |
 | A regular task — from the tracker or as plain text | `/devflow:task <ABC-12 \| text>` — full cycle with live acceptance checks, review, and commit/status gates |
 | A finding worth keeping came out of a test or discussion | `/devflow:issue <finding>` — draft → your approval → tracker issue |
 | Large task (multiple commits/sessions) | `/devflow:ralph-plan <goal>` → review the TODO → `/loop /devflow:ralph-build` |
-| Polish code "until 10/10" | `/devflow:review [branch \| PR]` — review→fix→re-review loop against your project's own rules |
-| Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest; heavy multi-angle digs ask before spending, `quick <question>` for a cheap single-pass answer |
+| Polish code "until 10/10" | `/devflow:review [branch \| PR]` — review→fix→re-review loop against your project's own rules; `swarm` fans the review pass out to parallel finders + adversarial verifiers |
+| Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest; heavy multi-angle digs ask before spending, `quick <question>` for a cheap single-pass answer, `swarm <question>` for a deep verified multi-agent dig |
 | A related repo moved ahead (frontend, backend, mobile, shared contracts, infra-as-code — any counterpart) | `/devflow:sync <name>` |
-| Docs drifted from the code | `/devflow:sync-docs` |
+| Docs drifted from the code | `/devflow:sync-docs` — `swarm` verifies each claimed code bug independently |
 | Work finished (with or without devflow) — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |
 | Plugin updated, manifest is behind | `/devflow:update` |
 | A typo / trivial change you can eyeball | no devflow — just ask in the session |

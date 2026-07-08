@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.23.0 — 2026-07-08
+
+- **`swarm` mode — opt-in multi-agent Workflow across four skills** (`review`, `research`, `test-flow`, `sync-docs`). The word `swarm` in a skill's arguments is the user's explicit opt-in to the expensive parallel path — the same contract as the cloud-billed `/code-review ultra`, but local: the skill announces the plan and token cost, fans out via the harness Workflow tool, and where that tool isn't present degrades to the skill's existing single-threaded or Agent-based path rather than failing. Rationale: a few skills gain real quality from *deterministic* orchestration (per-dimension pipelines, barriers, adversarial verify) that a model-driven single pass leaks — but tacit fan-out on every invocation would betray devflow's guardrail-first posture, so it stays behind an explicit keyword, never a default.
+  - **review**: `swarm` runs the review pass as a pipeline of per-dimension finders (correctness/security/perf + every REVIEW.md check), each finding then confirmed by adversarial verifiers (skeptics prompted to refute; survives on majority-confirm) before entering the same triage→fix→re-review loop. Distinct from `/code-review ultra` — that runs billed in Anthropic's cloud; `swarm` fans out inside the session.
+  - **research**: upgrades the existing behind-a-cost-gate fan-out to a deterministic Workflow — multi-modal sweep (angle × source-type), contrarian as its own parallel stage, adversarial claim verification before a confidence grade, loop-until-dry. Now three depths: `quick` / full / `swarm`.
+  - **test-flow**: `swarm` + several flows runs a suite in parallel — shared env/auth established once in the main session, one agent per flow, fixture-colliding flows serialized rather than raced. A single flow stays on the api-tester path (fan-out buys nothing).
+  - **sync-docs**: upgrades the bucket fan-out to a verified pipeline — each claimed 🐛 (doc reveals a code bug) is re-checked by an independent agent before the digest; an unsubstantiated one is downgraded to 📝 or dropped with a note. Confluence stays in the main session (no MCP inside Workflow agents).
+- **Docs**: README and GUIDE tables document `swarm` alongside `quick`, so the mode is discoverable and `sync-docs` won't flag it as drift.
+- Deliberately NOT added: `swarm` on `task`/`issue`/`doctor`/`handoff` (nothing to parallelize there); Workflow as any skill's default (opt-in only, by design).
+
 ## 0.22.3 — 2026-07-02
 
 - **ralph-build: loop end = handoff** — when a run finishes (TODO fully checked, or stopped on blockers), the loop offers a review handoff for the whole task branch, with the TODO's `⚠ judgment call` notes feeding the 🔴 section. Closes the last scenario where the user had to remember to ask "что мне проверить" after an autonomous run — inside the task cycle the handoff was already built in, outside devflow the standalone skill auto-invokes on intent.

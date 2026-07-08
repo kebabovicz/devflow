@@ -1,5 +1,5 @@
 ---
-description: Test a described user/business flow against the live local project — spins up the environment, authenticates when needed, executes the scenario step by step, reports expected vs actual. Use when asked to test a flow, verify an API or UI scenario, or check the project behaves as designed.
+description: Test a described user/business flow against the live local project — spins up the environment, authenticates when needed, executes the scenario step by step, reports expected vs actual. Use when asked to test a flow, verify an API or UI scenario, or check the project behaves as designed. Add 'swarm' with several flows to run a suite in parallel.
 ---
 
 # Test flow: $ARGUMENTS
@@ -14,6 +14,15 @@ Verify the described flow against the real running services. Read `.devflow/proj
 4. **Check fixture preconditions**: a flow that needs data in a specific state (an order in Draft, a user with role X) checks that data exists BEFORE executing. Missing fixture → present options (seed it, set it up via API, targeted data edit with user approval) — pick one with the user, don't improvise.
 5. **Execute** step by step using the surface's natural tool: curl for HTTP, the project's e2e runner (playwright/cypress) for UI flows when one exists, the CLI itself for CLIs, plan/validate for IaC. After each step verify: outcome, response/output shape, and side effects (data state, emitted events, generated files) where checkable.
 6. **Report** as a table: step → expected → actual → ✅/❌. State each step's verification depth — response shape / status code only / side effects checked: a ✅ that only saw a status code must say so, it is a weaker claim. For failures include the failing request (method, path, body) and response verbatim. If mapping "$ARGUMENTS" to the scenario involved interpretation (ambiguous flow name, several candidate endpoints), name the choice you made — the user verifies the scenario before trusting its verdict.
+
+## Swarm mode (`swarm` — a suite of flows in parallel, opt-in)
+
+For a suite — several flows named in "$ARGUMENTS", or `swarm` plus a list — run them concurrently as a Workflow instead of one after another. A single flow gains nothing from fan-out; keep it on the api-tester path above. Only with the Workflow tool available; otherwise run the flows sequentially via api-tester and say the suite ran serially.
+
+- **Shared setup stays in the main session, once**: determine the minimal env, `env.up`, `env.health`, and establish `auth.recipe`/`user_recipe` BEFORE fanning out. Agents execute against the already-running env — they do not each spin up or authenticate.
+- **One agent per flow**: each runs the Protocol steps for its own scenario (understand → preconditions → execute → verify) and returns its step table. The precondition budget applies per agent.
+- **Fixture collisions are a stop, not a race**: flows that mutate the same fixture (the same order, the same user's state) must not run in parallel blind — detect the overlap up front and either serialize those or flag it to the user. Read-only and independent-fixture flows parallelize freely.
+- **Aggregate**: merge the per-flow tables into one report, each flow its own section, verification depth preserved per step. Only what the main session started gets torn down.
 
 ## Rules
 

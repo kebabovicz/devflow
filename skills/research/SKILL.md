@@ -1,12 +1,12 @@
 ---
-description: Deep web research with built-in methodology — multiple independent sources, contrarian pass, primary sources over SEO content, confidence-graded digest. Use whenever the user asks to research something ("давай проведём ресёрч", "поресерчь", "research X", "что сейчас используют для Y"), compare technologies, find current best practices, check what's current/actual, or gather real-world experience and opinions before a decision. Prefix the argument with "quick" for a cheap single-pass digest without subagents.
+description: Deep web research with built-in methodology — multiple independent sources, contrarian pass, primary sources over SEO content, confidence-graded digest. Use whenever the user asks to research something ("давай проведём ресёрч", "поресерчь", "research X", "что сейчас используют для Y"), compare technologies, find current best practices, check what's current/actual, or gather real-world experience and opinions before a decision. Prefix the argument with "quick" for a cheap single-pass digest without subagents, or "swarm" for a deep parallel Workflow dig with adversarial claim verification.
 ---
 
 # Research: $ARGUMENTS
 
 Produce a decision-grade digest, not a list of links. Works anywhere (no manifest needed); when run inside a devflow project, ground the research in its stack and constraints from `.devflow/project.yml` and CLAUDE.md.
 
-**Two depths.** Full (default) — the complete methodology below. `quick` (first word of "$ARGUMENTS") — inline only: no subagents, ~8–10 searches total, the contrarian pass shrinks to one query, triangulation is relaxed. The visible price: every quick finding MUST carry its honest confidence grade, and most will be likely/unverified — quick answers low-stakes questions, it does not back irreversible decisions. Searches are the dominant token cost of research regardless of model or effort — depth is the lever, and choosing it is the user's call.
+**Three depths.** Full (default) — the complete methodology below. `quick` (first word of "$ARGUMENTS") — inline only: no subagents, ~8–10 searches total, the contrarian pass shrinks to one query, triangulation is relaxed. The visible price: every quick finding MUST carry its honest confidence grade, and most will be likely/unverified — quick answers low-stakes questions, it does not back irreversible decisions. `swarm` (first word) — the heavy Workflow path in *Swarm mode* below, for a question worth a deep parallel dig with verification. Searches are the dominant token cost of research regardless of model or effort — depth is the lever, and choosing it is the user's call.
 
 ## Before searching
 
@@ -29,6 +29,17 @@ Produce a decision-grade digest, not a list of links. Works anywhere (no manifes
 - **Date every key fact** (version, post date). Flag anything that predates a major release of the subject.
 - **Heavy digs go to subagents — behind a cost gate**: 3+ sub-questions or a deep dive → fan out to general-purpose subagents (one per angle), synthesize in the main session. **Announce before fanning out and ask**: the angles found, how many subagents, and that this is the expensive path (a 3-agent dig runs on the order of 100–200k tokens) — full or quick is the user's spending decision, not yours. Single-angle questions skip the gate.
 - **Subagent budget: ~15 tool calls each.** Budget spent → synthesize from what was gathered and name what stayed uncovered; never dig past it. Subagents return compressed, sourced conclusions — search results are context-expensive, the user's session holds conclusions, not raw dumps.
+
+## Swarm mode (`swarm` — deterministic Workflow, opt-in)
+
+When the Workflow tool is available and the user asked for `swarm`, run the dig as a Workflow instead of loose subagents — the determinism buys coverage the model-driven fan-out leaks. Announce the plan and cost first (same gate as the default dig — a swarm runs several × the token cost of a quick pass); no Workflow tool in the session → degrade to the Agent-based fan-out in *Method* and say so.
+
+- **Multi-modal sweep**: one agent per search *angle* and per source-type (primary docs, experience reports, community pulse), each blind to the others — different angles surface different camps.
+- **Contrarian as its own stage**: the mandatory contrarian pass runs as a parallel stage over every candidate claim ("X problems / criticism / why we moved away"), not as an afterthought buried inside one agent.
+- **Adversarial claim verification**: each candidate finding is re-checked by an independent agent before it earns a confidence grade — a claim no verifier can re-source drops to unverified.
+- **Loop-until-dry**: keep sweeping until a round surfaces nothing new, so the long tail of camps isn't cut off by a fixed agent count.
+
+The output contract is unchanged — the digest, confidence grades, mandatory minority view, and grouped sources all still apply.
 
 ## Output — the digest
 

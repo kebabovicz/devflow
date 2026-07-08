@@ -1,5 +1,5 @@
 ---
-description: Iterative code review LOOP — judge the diff against the project's own rules, fix accepted findings, re-review until a pass comes back clean. Use when asked to polish a change "until 10/10" or review thoroughly/iteratively. For a single review pass, the built-in code-review skill is the right tool (this skill wraps it in a fix-and-re-review cycle).
+description: Iterative code review LOOP — judge the diff against the project's own rules, fix accepted findings, re-review until a pass comes back clean. Use when asked to polish a change "until 10/10" or review thoroughly/iteratively. For a single review pass, the built-in code-review skill is the right tool (this skill wraps it in a fix-and-re-review cycle). Add 'swarm' to run the review pass as a parallel multi-agent fan-out with adversarial verification of each finding.
 ---
 
 # Review: $ARGUMENTS
@@ -26,6 +26,14 @@ Iterative review-fix-review loop. Scope from "$ARGUMENTS": a branch (diff vs `gi
 - Default cap: 3 passes. Not converged by then → the remaining findings are presented as a list with your honest assessment (real debt vs reviewer noise); the user decides whether to continue.
 - Each pass must cite the rule or defect class behind every finding ("REVIEW.md says X", "CLAUDE.md says Y", "unhandled null", …). "Could be nicer" without a citable basis doesn't survive triage.
 
+## Swarm mode (`swarm` — heavy, multi-agent, opt-in)
+
+`swarm` as a word in "$ARGUMENTS" turns the single-threaded loop into a parallel Workflow: the user typing it IS their opt-in to the expensive path — announce the plan (the review dimensions found, how many agents, that a swarm review runs on the order of 100–200k tokens) and proceed, don't re-ask for permission.
+
+- **Only when the Workflow tool is available** in this session, and only when the scope is worth it — a handful of changed lines still reviews inline; a large or risky branch is what swarm is for. No Workflow tool → say so once and fall back to the normal loop above.
+- **Shape**: a pipeline over the review dimensions the rubric implies (correctness, security, performance, plus every repo-specific check REVIEW.md defines) — one finder agent per dimension, high effort, each fed the project rubric. As each finder returns, its findings fan out to adversarial verifiers (skeptics prompted to REFUTE, defaulting to refuted when uncertain); a finding survives only on majority-confirm. REVIEW.md skip rules prune before verification, not after.
+- **Then rejoin the loop**: surviving findings enter the same triage → fix → re-review cycle and the convergence rules above — swarm replaces the *review* pass, not the human triage gate. On a large diff the fix and re-review passes may themselves run as a swarm.
+
 ## Model note
 
-Review quality scales with the model. This skill follows the session model — for the "strongest model until clean" workflow, run it in your strongest available session (review subagents inherit it). Deep multi-agent cloud review of a whole branch is the built-in `/code-review ultra` (user-triggered, billed) — recommend it for large risky branches instead of looping this skill.
+Review quality scales with the model. This skill follows the session model — for the "strongest model until clean" workflow, run it in your strongest available session (review subagents inherit it). Deep multi-agent cloud review of a whole branch is the built-in `/code-review ultra` (user-triggered, billed) — recommend it for large risky branches instead of looping this skill. That cloud `ultra` and this skill's local `swarm` are different tools: `ultra` runs in Anthropic's cloud and is billed per run; `swarm` fans out subagents inside your current session.

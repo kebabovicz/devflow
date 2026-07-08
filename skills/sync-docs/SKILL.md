@@ -1,5 +1,5 @@
 ---
-description: Audit project docs against the actual code and fix drift — checks every doc in the manifest docs.map for statements the code contradicts. Use when asked to check or update documentation, or after a flow changed.
+description: Audit project docs against the actual code and fix drift — checks every doc in the manifest docs.map for statements the code contradicts. Use when asked to check or update documentation, or after a flow changed. Add 'swarm' to run the audit as a verified Workflow pipeline that independently confirms each claimed code bug.
 ---
 
 # Sync docs
@@ -29,3 +29,12 @@ devflow guarantees mapped docs exist and don't lie; when they don't exist yet, i
 4. **Verify claim by claim**: for each doc, check every concrete statement (endpoints, statuses, field names, sequence of steps, config keys) against the code. Code is the source of truth for *what is*; the doc may still be right about *what should be* — when behavior and doc disagree, classify: stale doc vs actual bug.
 5. **Report**: per doc — ✅ accurate / 📝 stale (with the exact outdated claims) / 🐛 doc reveals a code bug.
 6. **Fix stale docs** on approval: minimal edits, preserve the doc's structure and language. Bugs go to the user (or to `/devflow:ralph-plan`), never silently "fixed" by rewriting the doc to match broken behavior.
+
+## Swarm mode (`swarm` — verified Workflow pipeline, opt-in)
+
+The bucket fan-out in step 2 already parallelizes; `swarm` as a word in "$ARGUMENTS" (when the Workflow tool is available) makes it a deterministic pipeline and adds the verification gate the plain fan-out lacks. No Workflow tool → the Agent-based fan-out in step 2 stands as-is; say so.
+
+- **Bucket audit → finding verification, per bucket, no barrier**: as each bucket agent returns, every 🐛 (doc reveals a code bug) it claims is handed to a second, independent agent that re-checks the claim against the code before it reaches the digest — a "bug" no verifier can substantiate is downgraded to a 📝 stale-doc note or dropped, with a line saying so. 📝 stale-doc edits don't need this gate.
+- **Partitioning is unchanged**: 3–4 area buckets, manifest + CLAUDE.md their own bucket, no two agents touching the same file — so parallel edits never collide.
+- **Confluence still stays in the main session** — verify its pages after the swarm returns, never inside a Workflow agent.
+- **Aggregate exactly as step 2 requires**: one classification table, one deduplicated 🐛 list — the user gets a single digest, and the same approval gate governs any edit.
