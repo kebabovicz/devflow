@@ -19,9 +19,13 @@ The protocol below is the same for both; only the interview axes differ.
 
 Present back what you understood: for a feature — current behavior (as found in the code) → what the user seems to want → the deltas; for greenfield — the idea as heard → the biggest unknowns. If "$ARGUMENTS" contradicts the code or contains an internal contradiction, surface it now.
 
-### 2. Interview in rounds
+### 2. Interview in rounds — two instruments
 
-Use the AskUserQuestion tool — 2–4 questions per round, each with concrete options and your recommended option first. Free-text question walls are forbidden: options force *you* to think through the answer space, and the user picks in seconds instead of writing essays. Order rounds by leverage: answers that constrain everything else (audience, core loop, architecture, data shape) before cosmetics. Keep looping rounds as long as they produce decisions — a real interview is rarely one round.
+**Closed forks → AskUserQuestion** (2–4 per round). When the answer space is honestly enumerable, present concrete options with your recommendation first — the user picks in seconds instead of writing essays, and building the options forces *you* to think the answer space through.
+
+**Open ground → prose dialogue.** When a menu would flatten the answer — the user's vision of how it should work and feel, motivations, priorities, "walk me through the scenario" — ask in plain text: 1–3 pointed questions at a time, each tied to something just said. A menu with invented options is worse than an honest open question; four short labels cannot hold a discussion.
+
+A real discussion alternates the two: prose opens a topic and digs into what came back, menus nail down the forks that emerged from it. **Follow up on every answer** — if it opens new ground, contradicts an earlier answer, or hides an ambiguity, chase that in the next round instead of marching down a checklist. Order rounds by leverage: answers that constrain everything else (audience, core loop, architecture, data shape) before cosmetics. Keep looping as long as rounds produce decisions — a real interview is rarely one round, and almost never menu-only.
 
 A question earns its slot only when all three hold:
 
@@ -70,5 +74,5 @@ Present a short summary, then hand over:
 
 - **No implementation, no file edits beyond the spec file.** The strongest temptation is "it's clear enough, let me just build it" — that instinct is the exact failure this skill exists to stop.
 - Silence is not consent: an unanswered question goes to "open questions"; it never gets a silently-picked answer.
-- At most 4 questions per round. Ten forks to resolve → several rounds, highest-leverage first.
+- At most 4 menu questions or 3 prose questions per round — never a wall of ten. Ten forks to resolve → several rounds, highest-leverage first.
 - Re-running on an existing spec is an update conversation: diff new decisions against the file, don't start over.
