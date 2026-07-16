@@ -2,7 +2,7 @@
 description: Pre-implementation interview — pull the full picture out of the user's head before any code is written. Works for a feature in an existing project AND for a brand-new project that is still just an idea ("I want a fitness app"). Produces an approved spec/concept file that /devflow:task and /devflow:ralph-plan consume. Use when the user wants to shape or discuss something before building it.
 ---
 
-# Spec: $ARGUMENTS
+# Discuss: $ARGUMENTS
 
 The user has a picture in their head; you cannot read minds. Every decision you would silently make on your own is a question you owe them — asked now, while it costs one sentence, not after implementation, when it costs a rewrite. This skill is interrogation and negotiation. **No implementation happens here.**
 
