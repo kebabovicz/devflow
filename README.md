@@ -67,7 +67,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | "How is this project configured?" | `/devflow:config` |
 | Manifest may have drifted from reality / clear `UNVERIFIED` homework | `/devflow:revalidate` — re-runs init's live validation, updates the markers |
 | Check whether a business flow works | `/devflow:test-flow <flow>` — `swarm` + several flows runs the suite in parallel |
-| A feature is still a picture in your head — shape it before building | `/devflow:spec <idea>` — a thorough interview (option-based questions on real forks, contentious calls argued, assumptions confirmed) → an approved spec that `task` / `ralph-plan` consume |
+| A feature — or a whole new project — is still a picture in your head | `/devflow:spec <idea>` — a thorough interview (option-based questions on real forks, "I don't know" answered with proposed options, contentious calls argued, assumptions confirmed) → an approved spec/concept that `task` / `ralph-plan` consume |
 | A regular task — from the tracker or as plain text | `/devflow:task <ABC-12 \| text>` — full cycle with live acceptance checks, review, and commit/status gates |
 | A finding worth keeping came out of a test or discussion | `/devflow:issue <finding>` — draft → your approval → tracker issue |
 | Large task (multiple commits/sessions) | `/devflow:ralph-plan <goal>` → review the TODO → `/loop /devflow:ralph-build` |
