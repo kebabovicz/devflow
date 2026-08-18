@@ -63,7 +63,10 @@ behalf — every edge left unstated here gets decided silently.>
 ## Rejected alternatives
 
 <what else was considered and why it lost. Without this the next session
-re-invents the rejected option. This section is also the raw material for
+re-invents the rejected option. A design that lost a design-it-twice round
+gets one paragraph here — the idea, its cost, why it lost — never its full
+text: the reason is what a future session needs, the details only invite
+re-opening a settled decision. This section is also the raw material for
 an ADR when a decision turns out hard to reverse.
 
 Any DELIBERATE DIVERGENCE from how the project already does this belongs

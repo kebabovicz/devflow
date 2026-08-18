@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.30.0 — 2026-08-18
+
+- **Design it twice, at the stage where the shape gets fixed.** `/devflow:map` produced exactly one design for anything, and a shape written into `design.md` stops being argued with — so the first idea won by default. `skills/map/DESIGN-IT-TWICE.md` builds three in parallel instead: the user is shown the problem frame (constraints, dependencies, a rough sketch that exists to make the constraints concrete rather than to propose anything) and reads it while three agents design against three different constraints — minimize the interface, maximize flexibility, make the most common call trivial; a fourth joins when a dependency crosses a seam.
+- **The constraints are a baseline, not a liturgy.** Where one has no bite in this case — flexibility nobody will use, a common case that does not exist — it is replaced by one that does. A constraint nobody needs produces a cosmetic variant, and three cosmetic variants are worse than one honest design.
+- **Applies to any shape that is expensive to change**, not just a module's calls: an API contract, how responsibilities split across services, a user-facing flow when the flow is itself the decision. Not to adding a field to an existing call.
+- **Compared on three named axes, then recommended — never handed over as a menu.** *Depth* (how much work the interface hides; a shallow design passes the work back to the caller and only renames it), *locality* (where the next likely change lands — one place or fanned out), *seam placement* (what the tests will be able to target). Three options with equal weight hand the work straight back to the user, which is what they were trying to avoid.
+- **Losers get one paragraph in `design.md` → *Rejected alternatives*** — the idea, what it cost, why it lost. Full texts die with the session deliberately: a future session needs the reason, and the details would only invite re-opening a settled decision.
+- **Offered once, with the price named**, because three design agents are a real spend; a refusal is not re-asked in that effort. No Agent or Workflow tools in the session → one design, and say so.
+
 ## 0.29.0 — 2026-08-18
 
 - **One style rule for everything devflow says: `skills/OUTPUT-STYLE.md`.** The complaint that produced it, twice in one session: the questions were unreadable — "axis", "pass", "triage", "orchestrator", "the loop wraps around it". A question the reader has to decode gets answered on what they decoded, not on what was asked, and the wrong answer is then recorded as a decision. The rule binds every message a skill prints **and every file it writes for a person to read** — tickets, specs, `design.md`, handoffs — while leaving code, commit messages, and the skills' own instruction text alone.

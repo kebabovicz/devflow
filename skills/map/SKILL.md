@@ -26,7 +26,7 @@ Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`); no manifes
 
 **Maps are never versioned.** Before writing the first file, ensure `<maps.dir>/` is listed in `.git/info/exclude` — add it if absent. Never `.gitignore`: that file is itself committed, and a planning draft is the user's thinking, not the team's documentation. This holds at every `project.footprint` value, `committed` included.
 
-Formats: `${CLAUDE_SKILL_DIR}/MAP-FORMAT.md` for the map and its decision tickets, `${CLAUDE_SKILL_DIR}/DESIGN-FORMAT.md` for the spec and the detailed design, `${CLAUDE_SKILL_DIR}/SLICING.md` for cutting implementation tickets.
+Formats: `${CLAUDE_SKILL_DIR}/MAP-FORMAT.md` for the map and its decision tickets, `${CLAUDE_SKILL_DIR}/DESIGN-FORMAT.md` for the spec and the detailed design, `${CLAUDE_SKILL_DIR}/SLICING.md` for cutting implementation tickets, `${CLAUDE_SKILL_DIR}/DESIGN-IT-TWICE.md` for designing a shape three ways before picking one.
 
 ## Two modes
 
@@ -59,6 +59,7 @@ When the frontier is empty and no fog remains, the map stops being a question li
 
 1. **`spec.md`** — what and why: problem, solution, user scenarios, done-criteria, out of scope. No implementation detail here.
 2. **`design.md`** — how exactly: interfaces and seams, data shapes and contracts, behavior at the edges, rejected alternatives. This is the document that stops the implementing agent from inventing; every question it leaves open, someone else will answer silently.
+   **When the shape being decided is expensive to change** — a module's interface, an API contract, how responsibilities split across services, a user-facing flow that is itself the decision — offer `${CLAUDE_SKILL_DIR}/DESIGN-IT-TWICE.md` before writing this section: three designs built in parallel under different constraints, compared, one recommended. Offered once with the price named, because three design agents cost real tokens; a refusal is not re-asked. The first shape that comes to mind is rarely the best one, and after it lands in this file nobody argues with it again.
 3. **`tickets/`** — vertical slices with `Blocked by` edges and acceptance checklists, worked frontier-first by `/devflow:task <path>`.
 
 **Tracker is optional, and offered last.** With `tracker.system` configured, offer once to publish the implementation tickets as issues; on approval, record each returned key next to its local ticket. The local file stays the source of truth — a project without a tracker loses nothing here.
