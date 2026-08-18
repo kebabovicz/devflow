@@ -5,6 +5,8 @@ disable-model-invocation: true
 
 # Map: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 An idea arrives and the way from here to a built feature is not visible yet. This skill charts that way as a **map of decisions** — files that outlive the session — and works it one decision at a time, until nothing is left to decide and the work can be cut into tickets.
 
 **Decide, don't build.** Every stage here produces decisions; code comes after the map closes, from `/devflow:task`. The pull to "it's clear enough, let me just build it" is the exact failure this skill exists to stop — a decision nobody made is a decision the implementing agent makes silently.

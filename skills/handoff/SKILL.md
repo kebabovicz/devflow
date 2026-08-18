@@ -4,6 +4,8 @@ description: Hand work off — either to the human who must review finished work
 
 # Handoff: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 Two different things get handed off, to two different readers. **Pick by whether the work is finished.**
 
 - **Finished** → a *review handoff*: the reader is the human whose bottleneck is verifying agent work. Spend their attention where the risk is.

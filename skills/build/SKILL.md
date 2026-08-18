@@ -5,6 +5,8 @@ disable-model-invocation: true
 
 # Build
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`). Tickets live at `<maps.dir>/<effort>/tickets/`, their design at `<maps.dir>/<effort>/design.md`. No tickets anywhere → stop and say `/devflow:map` has to close an effort into tickets first.
 
 This is the **autonomous** counterpart of `/devflow:task`: same cycle, no approval gates, one ticket per invocation. Everything it needs was decided in the map — that is what makes running it unattended defensible.

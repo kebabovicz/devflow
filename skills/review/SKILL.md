@@ -4,6 +4,8 @@ description: Iterative code review LOOP along two independent checks — Standar
 
 # Review: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 Iterative review-fix-review loop. Scope from "$ARGUMENTS": a branch (diff vs `git.base_branch` from `.devflow/project.yml`), a PR number, or — default — uncommitted changes plus the current branch's commits over base. Works without a manifest too (generic review), but then say that project conventions could not be loaded.
 
 This is the end-of-work review, run deliberately: by the user, or offered by another skill when a ticket closes. `/devflow:task` does **not** call it — a task carries its own single check and its own triage, and nesting one gated loop inside another buys nothing.

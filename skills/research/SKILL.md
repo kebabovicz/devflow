@@ -4,6 +4,8 @@ description: Deep web research with built-in methodology — multiple independen
 
 # Research: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 Produce a decision-grade digest, not a list of links. Works anywhere (no manifest needed); when run inside a devflow project, ground the research in its stack and constraints from `.devflow/project.yml` and CLAUDE.md.
 
 **Three depths.** Full (default) — the complete methodology below. `quick` (first word of "$ARGUMENTS") — inline only: no subagents, ~8–10 searches total, the contrarian pass shrinks to one query, triangulation is relaxed. The visible price: every quick finding MUST carry its honest confidence grade, and most will be likely/unverified — quick answers low-stakes questions, it does not back irreversible decisions. `swarm` (first word) — the heavy Workflow path in *Swarm mode* below, for a question worth a deep parallel dig with verification. Searches are the dominant token cost of research regardless of model or effort — depth is the lever, and choosing it is the user's call.

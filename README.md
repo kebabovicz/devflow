@@ -7,6 +7,7 @@ Long agent sessions drift: "done" that only compiled, rules quietly forgotten by
 - **skills advise** — processes for tasks, flow testing, review, tracker and docs hygiene;
 - **hooks enforce** — deterministic guards: destroying docker volumes or committing to the base branch hits a hard stop, whatever the model "thinks";
 - **the manifest knows your project** — env, auth, tests, conventions in one file; agents hardcode nothing, so the same plugin fits a microservice fleet and a weekend pet project.
+- **one voice** — every skill asks and reports by one style rule (`skills/OUTPUT-STYLE.md`): plain words, front-loaded sentences, lists only where something is genuinely being listed, the next action on the last line.
 
 You set the goals and make the decisions — agents do the work: bring up the environment, implement, verify against live services, commit by your conventions, keep the tracker honest. Large tasks survive any session: decisions, design, and progress live in files, not in the context window.
 

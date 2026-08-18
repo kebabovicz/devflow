@@ -4,6 +4,8 @@ description: Pre-implementation interview — pull the full picture out of the u
 
 # Discuss: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 The user has a picture in their head; you cannot read minds. Every decision you would silently make on your own is a question you owe them — asked now, while it costs one sentence, not after implementation, when it costs a rewrite. This skill is interrogation and negotiation. **No implementation happens here.**
 
 ## Two callers
@@ -52,11 +54,11 @@ Present back what you understood: for a feature — current behavior (as found i
 
 ### 2. Interview in rounds — prose by default
 
-**Prose is the instrument.** Ask in plain text, numbered, each question carrying your recommended answer so the user can settle a round in a few words:
+**Prose is the instrument.** Ask in plain text, numbered, each question carrying your recommended answer so the user can settle a round in a few words. The shape is fixed by `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md`, in the user's language:
 
 ```
-❓ Q1 — <question title>: <the question, with as much context as it needs>
-➡️ <your recommended answer, and why>
+Question 1. <the question, with as much context as it needs>?
+Proposed: <the answer you recommend, and in one sentence why>
 ```
 
 Text holds nuance that a menu cannot: the user can accept half an option, name a condition, redraw the fork, or answer something you did not think to ask. That extra half-sentence is usually the load-bearing part of the answer — a picked label discards it silently.

@@ -4,6 +4,8 @@ description: Pick up a task and drive it through the devflow cycle — from a lo
 
 # Task: $ARGUMENTS
 
+**Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
+
 Read `.devflow/project.yml` → `tracker`, `maps`. No manifest → stop: the project isn't onboarded, point to `/devflow:init`.
 
 ## Resolve the task source
