@@ -86,6 +86,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | Docs drifted from the code | `/devflow:sync-docs` — `swarm` verifies each claimed code bug independently |
 | Work finished — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |
 | Stopping mid-work and passing it on | `/devflow:handoff` — work handoff for the next session: what is done and where it lives, the exact stopping point, what did not work, what is left |
+| A new session, and the last one stopped mid-work | `/devflow:handoff продолжи` — finds the last handoff, checks its claims against the repository, shows where it would continue, and waits for you |
 | Plugin updated, manifest is behind | `/devflow:update` |
 | A typo / trivial change you can eyeball | no devflow — just ask in the session |
 

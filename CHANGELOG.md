@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.37.0 — 2026-08-18
+
+- **`/devflow:handoff` works in both directions now.** It could write a handoff and never read one, so picking work back up meant telling a fresh session by hand which file to open — the exact clerical step the handoff exists to remove. Called with a word meaning *continue* — in whatever language it arrives — it finds the last handoff, checks it, shows where it would continue, and waits.
+- **The mode is chosen by the words after the skill name, and stated in the first line of the answer.** Anything meaning *save, record, hand this over* writes; anything meaning *continue, pick up, where were we* resumes. With no such word it reads the state: edits in this session or a ticket in progress → write; a session that has done nothing with a handoff on disk → resume; nothing either way → say so instead of guessing. Naming the chosen mode makes a wrong guess cost one word rather than a lost handoff.
+- **Resuming checks the document against the repository before showing anything.** A handoff is a claim and the repository is the fact: the commits it names, the working tree it describes, the branch and ticket status it assumes. **Drift is reported first, ahead of the summary** — continuing on top of a description that has quietly diverged is worse than starting cold, because the wrong parts are the invisible ones.
+- **Several candidates are listed, not guessed between** — path, one line of what it is about, last modified — because resuming the wrong work is not noticed for an hour. None found is said plainly, along with the honest limit: a handoff written outside the project, in the user's own notes directory, is not discoverable and has to be named as an argument.
+- **It shows and stops.** A resumed session does not start implementing on its own; where to continue from is the user's decision. And a work handoff report now ends with the path it wrote and the call that reopens it — a file nobody knows how to open is not a handoff.
+
 ## 0.36.0 — 2026-08-18
 
 - **The plugin description stopped advertising a skill that no longer exists.** It still said "Ralph-style task loops" four versions after `ralph-plan` and `ralph-build` were removed, and said nothing about the design layer, so the first thing anyone read in `/plugin` described devflow as it was in 0.25. It now names what is actually there: decision maps that design the work before code, the task cycle and the unattended build loop over their tickets, two-check review, bug diagnosis, flow testing, docs and tracker hygiene.

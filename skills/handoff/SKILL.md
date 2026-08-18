@@ -1,17 +1,20 @@
 ---
-description: Hand work off — either to the human who must review finished work (a risk-ranked attention map with two-minute re-checks), or to the next session picking up work you are stopping in the middle of (what is done, where exactly you stopped, what to do next). Use when asked to prepare work for review, to summarize what needs human eyes, or to pass an unfinished ticket or effort to another session. Also the format authority other devflow skills render their close-the-loop reports with.
+description: Hand work off in both directions — write a handoff, or pick one up. Writing: a risk-ranked review handoff for the human checking finished work, or a work handoff for the next session picking up work you are stopping mid-way. Reading: called in a fresh session it finds the last handoff, checks it against the repository, and shows where it would continue. Use when asked to prepare work for review, to summarize what needs human eyes, to pass an unfinished ticket or effort on, or to resume one. Also the format authority other devflow skills render their close-the-loop reports with.
 ---
 
 # Handoff: $ARGUMENTS
 
 **Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
 
-Two different things get handed off, to two different readers. **Pick by whether the work is finished.**
+The baton has two ends: writing one and picking one up. **Three modes, and the first line of your answer says which one you took** — so a wrong guess costs one word to correct, not a lost handoff.
 
-- **Finished** → a *review handoff*: the reader is the human whose bottleneck is verifying agent work. Spend their attention where the risk is.
-- **Unfinished, and you are stopping** → a *work handoff*: the reader is the next session, which knows nothing except what you write down. Spend its first minutes on continuing, not on re-deriving.
+- **Write a review handoff** — the work is finished. The reader is the human whose bottleneck is verifying agent work; spend their attention where the risk is.
+- **Write a work handoff** — the work is unfinished and you are stopping. The reader is the next session, which knows nothing except what you write down.
+- **Resume** — read the last handoff, check it against the repository, and show where you would continue. This is what a fresh session calls.
 
-When "$ARGUMENTS" does not settle which, look at the state: a ticket marked `Status: in progress`, an uncommitted tree, a half-implemented slice — that is a work handoff. Ask if it is genuinely ambiguous.
+**How to pick.** The words after the skill name decide it, in whatever language they come in: anything meaning *save, record, write it down, hand this over* → write; anything meaning *continue, pick up, resume, where were we* → resume. Judge the intent, not a keyword list.
+
+With no such word, read the state: this session has edits, a ticket marked `Status: in progress`, or a dirty tree → write (finished work → review handoff, stopped work → work handoff). This session has done nothing and a handoff exists on disk → resume. Nothing done and nothing on disk → say so plainly instead of guessing.
 
 **A work handoff is narrower than it looks, and writing one that nobody needed is not free** — it costs the session's remaining attention and produces a file the next reader has to reconcile with reality. It earns its place when the work is *travelling*: another harness, another directory or repository, a colleague, a side task parked mid-phase. Otherwise the right move at that boundary is usually continuing, clearing, a subagent, or compacting. `${CLAUDE_SKILL_DIR}/PHASE-BOUNDARIES.md` holds that decision in order, along with the three cases where devflow mandates a handoff whatever the tree says.
 
@@ -95,3 +98,44 @@ Unfinished work usually means a dirty tree, and a dirty tree does not travel. Be
 - **Anywhere else** (another machine, a colleague, a cloud session) → uncommitted work simply will not arrive. Offer a WIP commit on the task branch, marked as such in the message, and say plainly that it is a checkpoint rather than a finished change.
 
 Never hand off silently over a dirty tree — the next session will read the handoff, find files it cannot explain, and trust nothing else in the document. (The stop gate fires here for the same reason; the handoff is the answer to it, not a way around it.)
+
+## Close by saying how to pick it up
+
+The last line of a work handoff report names the path it was written to and the call that resumes it — `/devflow:handoff продолжи`, in the user's language. A handoff nobody knows how to open is a file, not a handoff.
+
+---
+
+# Resume — picking one up
+
+A fresh session, an empty head, and somewhere on disk the last one wrote down where it stopped. This mode finds that, checks it, and shows what continuing would mean. **It does not start working.**
+
+## 1. Find the candidates
+
+Three places, and nothing clever:
+
+- ticket files carrying a `## Handoff` section — usually with `Status: in progress`;
+- `HANDOFF.md` in any open effort under `<maps.dir>`;
+- a path given in "$ARGUMENTS", which wins over both.
+
+**Several candidates → list them and ask which one**: path, one line of what it is about, and when it was last modified. Guessing here is how a session resumes the wrong work and does not notice for an hour. **One candidate** → take it, and say which. **None** → say plainly that there is nothing to pick up, and stop; do not perform a search across the repository to look thorough.
+
+A handoff written to a path outside the project (the user's own notes directory, for instance) is not discoverable — it has to be named in the argument. Say so rather than reporting that nothing was found.
+
+## 2. Check it against the repository before showing anything
+
+**A handoff is a claim; the repository is the fact.** Between the two sessions the branch may have moved, someone may have committed the working tree, a ticket may have been closed. Check what the document asserts:
+
+- commits it names — are they on this branch (`git log`)?
+- work it says is sitting in the working tree — is it (`git status`)?
+- the branch it assumes — is that the one checked out?
+- the ticket status it assumes — is that what the file says now?
+
+**Discrepancies are reported first, before the summary**, and they are not smoothed over. Continuing on top of a description that has drifted from the repository is worse than starting cold, because the wrong parts are invisible.
+
+## 3. Show where you would continue, then wait
+
+Six lines, not a re-telling of the file: the goal; where the previous session stopped, precisely; what the next action would be; what did not work, so it is not re-walked; what is left; and any discrepancy from the check above.
+
+Then **stop and wait for the user**. They decide whether to continue from that point, take something else first, or throw the plan away — a resumed session that starts implementing on its own has taken a decision that belonged to them.
+
+Once the work continues, the handoff stops being current: the next stop rewrites it, and a finished ticket drops its `## Handoff` section instead of leaving a stale one for the session after that.
