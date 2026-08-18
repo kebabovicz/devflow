@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.34.0 — 2026-08-18
+
+- **`.out-of-scope/` — the record of what the project will deliberately not do.** A decision not to build something is a decision, and it was the one devflow never wrote down: the issue gets closed, the map gets archived, the reasoning evaporates, and the same request returns in different words to be argued from scratch — sometimes winning the second time, not because anything changed but because whoever pushed back is not in the room. `skills/OUT-OF-SCOPE.md` defines the record; the directory sits at the repository root.
+- **One file per concept, never per request.** Three requests for the same thing are three entries inside `dark-mode.md`, which is exactly what makes recognising the fourth one possible. Written as a short design document with the reason, what building it would actually take (so a future reversal starts from a number rather than from zero), and the list of prior requests.
+- **Local by default, published only on purpose.** Like maps, the directory goes into `.git/info/exclude` and never `.gitignore` — the line itself would announce it. A team that keeps hitting the same rejected requests has a good reason to commit it, and that is a decision made once, out loud, not a default.
+- **Checked by concept, not keyword, before three things**: `/devflow:issue` filing a ticket, `/devflow:discuss` starting an interview, and `/devflow:map` while charting an effort's scope. A match is surfaced as a question — here is what was decided and why, does it still hold — with all three answers normal: it holds (the new request joins the file), it does not (the file is rewritten or deleted and work proceeds), or the two are genuinely different.
+- **`/devflow:task` deliberately does not check.** A direct instruction to build something is not a request for triage, and answering an instruction with an old rejection argues about the wrong thing. Changing one's mind is the user's prerogative.
+- **A rejection has to be durable to be recorded.** "No time this quarter" is a deferral, not a rejection, and recording it poisons every later check; so does recording something closed because it is *already implemented*. When a map is archived, its *Out of scope* lines that are wider than that one effort are carried here alongside the other knowledge the map hands out before it is filed away.
+
 ## 0.33.0 — 2026-08-18
 
 - **`skills/handoff/PHASE-BOUNDARIES.md` — when a work handoff is the right move, and when it is the expensive one.** 0.27.0 gave devflow the work handoff without ever saying when to reach for it, so the honest default became "write one whenever stopping", which costs the session's last attention and leaves a file the next reader has to reconcile with reality. A handoff earns its place when the work is **travelling** — another harness, another directory or repository, a colleague, a side task parked mid-phase. Portability is the whole thing it buys.

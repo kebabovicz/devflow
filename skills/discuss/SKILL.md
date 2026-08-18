@@ -48,6 +48,10 @@ Whatever they pick, **a deliberate divergence must be recorded** — in the desi
 
 ## Protocol
 
+### 0. Check what was already rejected
+
+Read `${CLAUDE_SKILL_DIR}/../OUT-OF-SCOPE.md` and the project's `.out-of-scope/` if it exists. Re-opening a closed question is perfectly legitimate; doing it without knowing it was ever closed is how a decision gets reversed by whoever happens to be in the room. A match by concept goes to the user as a question — what was decided, why, does it still hold — before the interview starts.
+
 ### 1. Restate
 
 Present back what you understood: for a feature — current behavior (as found in the code) → what the user seems to want → the deltas; for greenfield — the idea as heard → the biggest unknowns. If "$ARGUMENTS" contradicts the code or contains an internal contradiction, surface it now.

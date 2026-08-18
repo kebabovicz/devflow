@@ -8,6 +8,7 @@ Read `.devflow/project.yml` → `tracker`. No manifest → stop: the project isn
 
 ## Protocol
 
+0. **Check what was already rejected**: read `${CLAUDE_SKILL_DIR}/../OUT-OF-SCOPE.md` and the project's `.out-of-scope/` if it exists. A request matching a past rejection by concept — not by keyword — gets that decision surfaced to the user instead of a fresh ticket: here is what was decided and why, does it still hold? Only a "no longer holds" or a genuinely different request proceeds to step 1.
 1. **Compose** the issue from "$ARGUMENTS" and/or the findings discussed in the conversation:
    - **Title**: imperative, ≤ 80 chars. **No area/type prefixes or tags in the title** (`[BACKEND]`, `МОБА:`, `Bug:` …) — routing lives in `tracker.labels` and the issue type; a title prefix duplicates them and pollutes search and boards.
    - **Body**: What was found (with `file:line` / request-response evidence) → Why it matters → What to do (concrete steps) → How to verify when done.
