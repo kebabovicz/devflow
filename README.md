@@ -78,7 +78,8 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest; heavy multi-angle digs ask before spending, `quick <question>` for a cheap single-pass answer, `swarm <question>` for a deep verified multi-agent dig |
 | A related repo moved ahead (frontend, backend, mobile, shared contracts, infra-as-code — any counterpart) | `/devflow:sync <name>` |
 | Docs drifted from the code | `/devflow:sync-docs` — `swarm` verifies each claimed code bug independently |
-| Work finished (with or without devflow) — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |
+| Work finished — "what exactly should I check?" | `/devflow:handoff` — risk-ranked review handoff: judgment calls first, mechanical changes as a count, two-minute re-checks |
+| Stopping mid-work and passing it on | `/devflow:handoff` — work handoff for the next session: what is done and where it lives, the exact stopping point, what did not work, what is left |
 | Plugin updated, manifest is behind | `/devflow:update` |
 | A typo / trivial change you can eyeball | no devflow — just ask in the session |
 

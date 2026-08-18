@@ -27,6 +27,7 @@ This is the **autonomous** counterpart of `/devflow:task`: same cycle, no approv
 ## Loop discipline
 
 - ONE ticket per invocation. Finishing early is success, not an invitation to start the next one — the loop will call you again.
+- **An iteration that cannot finish its ticket writes a work handoff into it** (per `${CLAUDE_SKILL_DIR}/../handoff/SKILL.md`) before stopping: where it got to, what did not work, what it would do next. The next iteration starts from that instead of from the ticket text alone.
 - Everything blocked and nothing buildable → report the blockers and stop the loop instead of churning. **Blocked tickets must not rot**: a blocker that is a missing decision goes back to `/devflow:map` as a new decision ticket; a blocker that is a real defect gets offered as `/devflow:issue`. Note the outcome next to the ticket either way.
 - **Loop end = handoff**: when the run finishes — every ticket done, or stopped on blockers — offer a review handoff for the whole branch (format per `${CLAUDE_SKILL_DIR}/../handoff/SKILL.md`, scope: branch vs `git.base_branch`). An autonomous run is exactly the "work done while the user wasn't watching" case the handoff exists for; the tickets' `⚠ judgment call` notes feed its 🔴 section verbatim.
 - **All tickets done → the effort is finished**: hand back to `/devflow:map`, which closes the effort — carrying out whatever outlives it and archiving the rest.

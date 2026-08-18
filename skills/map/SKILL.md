@@ -49,6 +49,8 @@ Pick by what exists: no map for "$ARGUMENTS" → **chart** it; a map exists (by 
 5. **Clear the fog the answer lifted**: graduate whatever is now sharp into new tickets (create, then wire edges), removing that patch from *Not yet specified*. If the answer puts a ticket past the destination, close it and leave one line in *Out of scope* — a scope boundary is not a step on the route. If it invalidates other tickets, update or delete them.
 6. **One decision per session is the recommendation** — a fresh window decides better than a crowded one. Continue if the user wants; `research` tickets are exempt, they cost the user nothing.
 
+**Stopping mid-effort** — the map already carries the decisions, but not what the current session learned while working one. Write a work handoff (per `${CLAUDE_SKILL_DIR}/../handoff/SKILL.md`): into the ticket if one is open, into `HANDOFF.md` if the whole effort is being parked.
+
 ## Closing the map — the three outputs
 
 When the frontier is empty and no fog remains, the map stops being a question list and becomes three artifacts, in order. Formats in `DESIGN-FORMAT.md` and `SLICING.md`.
