@@ -74,7 +74,7 @@ Something off? `/devflow:doctor` first — it finds most problems and tells you 
 | A regular task — a map ticket, a tracker key, or plain text | `/devflow:task <ticket path \| ABC-12 \| text>` — full cycle with live acceptance checks, review, and commit/status gates |
 | A finding worth keeping came out of a test or discussion | `/devflow:issue <finding>` — draft → your approval → tracker issue |
 | A map's tickets you want ground down unattended | `/loop /devflow:build` — one ticket per iteration, implementation in a fresh context, commit each time |
-| Polish code "until 10/10" | `/devflow:review [branch \| PR]` — review→fix→re-review loop against your project's own rules; `swarm` fans the review pass out to parallel finders + adversarial verifiers |
+| Polish code "until 10/10" | `/devflow:review [branch \| PR]` — review→fix→re-review loop along two independent checks: **Standards** (your project's own rules plus a code-smell baseline) and **Requirements** (does the diff implement exactly what the ticket and `design.md` decided). Reported side by side, never merged; `swarm` fans both out to parallel finders + adversarial verifiers |
 | Understand a topic before deciding | `/devflow:research <question>` — methodology-driven research: primary sources, contrarian pass, confidence-graded digest; heavy multi-angle digs ask before spending, `quick <question>` for a cheap single-pass answer, `swarm <question>` for a deep verified multi-agent dig |
 | A related repo moved ahead (frontend, backend, mobile, shared contracts, infra-as-code — any counterpart) | `/devflow:sync <name>` |
 | Docs drifted from the code | `/devflow:sync-docs` — `swarm` verifies each claimed code bug independently |
