@@ -13,6 +13,8 @@ Two different things get handed off, to two different readers. **Pick by whether
 
 When "$ARGUMENTS" does not settle which, look at the state: a ticket marked `Status: in progress`, an uncommitted tree, a half-implemented slice — that is a work handoff. Ask if it is genuinely ambiguous.
 
+**A work handoff is narrower than it looks, and writing one that nobody needed is not free** — it costs the session's remaining attention and produces a file the next reader has to reconcile with reality. It earns its place when the work is *travelling*: another harness, another directory or repository, a colleague, a side task parked mid-phase. Otherwise the right move at that boundary is usually continuing, clearing, a subagent, or compacting. `${CLAUDE_SKILL_DIR}/PHASE-BOUNDARIES.md` holds that decision in order, along with the three cases where devflow mandates a handoff whatever the tree says.
+
 ---
 
 # Review handoff — for the human
