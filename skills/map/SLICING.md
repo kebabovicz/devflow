@@ -29,7 +29,29 @@ not a layer-by-layer implementation list>
 If this slice deliberately departs from a pattern used elsewhere in the
 codebase, say so here in one line — the implementer must not "restore
 consistency" on their own, and the reviewer must not read it as a slip.>
+
+## Open questions
+
+<empty in a freshly cut ticket. Filled later, by whoever implements an
+EARLIER ticket and finds something that changes this one. One line each,
+naming where it came from and what it may change:
+
+- from 02, while implementing: the session token is issued per device, so
+  the user endpoints may need a device id in the path — decide before this
+  ticket starts.
+
+A ticket with an unanswered question here is not ready to take.>
 ```
+
+## A decision from one ticket does not rewrite the next one
+
+Implementing a slice regularly turns up something that changes a later slice — and that later slice usually has slices of its own depending on it. Rewriting the chain from inside the current ticket plans it without what the later ticket will know when it starts, and the further down the chain, the more speculative the rewrite gets.
+
+So: say it out loud, write it into the ticket it concerns under *Open questions*, and leave it to be settled there.
+
+**Finding the tickets it concerns is a graph walk, not a guess.** Take the current ticket's number, collect every ticket whose `Blocked by` names it, then every ticket whose `Blocked by` names one of those, and so on to the end of the chain. Those are the tickets downstream of this decision — the ones whose ground just moved. Matching by title or by topic misses exactly the case that matters, where the affected ticket is two steps away and named after something else.
+
+**An unanswered question makes the ticket un-takeable**: `/devflow:build` marks it `Status: blocked` and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
 
 ## Vertical slices
 

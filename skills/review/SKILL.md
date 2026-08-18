@@ -53,7 +53,7 @@ Standards findings are fixed in code, or accepted; an accepted judgment call is 
 A Requirements finding has three possible outcomes, and picking the right one matters more than the fix:
 
 - **the code is wrong** → fix it now;
-- **the decision was wrong** → the fix belongs in the design, not in this diff. **Write the question into the ticket it concerns and stop there.** Do not rewrite the chain: a decision taken while implementing ticket 1 that touches ticket 2 will also reach ticket 3, which depends on 2 — and re-planning both from inside ticket 1 re-plans them without the information ticket 2 will have. Point the collision out when you see it, record it where it will be read, and let it be settled when that ticket comes up.
+- **the decision was wrong** → the fix belongs in the design, not in this diff. **Write the question under *Open questions* in the ticket it concerns and stop there** — and find that ticket through the `Blocked by` graph rather than by its title. Do not rewrite the chain: a decision taken while implementing ticket 1 that touches ticket 2 will also reach ticket 3, which depends on 2 — and re-planning both from inside ticket 1 re-plans them without the information ticket 2 will have. Point the collision out when you see it, record it where it will be read, and let it be settled when that ticket comes up.
 - **the departure was deliberate** → it gets one line in the ticket saying so. An unexplained departure is read as a slip by the next reviewer and "fixed" back.
 
 ## The loop

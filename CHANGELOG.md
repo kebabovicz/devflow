@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.35.0 — 2026-08-18
+
+- **A ticket now has a place for the questions the previous ticket left behind.** 0.28.0 established the rule — a decision taken while implementing one slice does not rewrite the chain, it becomes a question in the ticket it concerns — but the ticket format had nowhere to put it, so the question landed as free text nobody looks for. `tickets/NN-slug.md` gains **`## Open questions`**: empty when the ticket is cut, filled later by whoever finds something upstream, one line each naming where it came from and what it may change.
+- **Finding the affected tickets is a graph walk, not a guess.** Every ticket whose `Blocked by` names this one, then everything downstream of those, to the end of the chain. Matching by title or topic misses the case that matters — the affected ticket is usually two steps away and named after something else.
+- **An unanswered question makes a ticket un-takeable, and the two runners differ deliberately**: `/devflow:build` marks it `Status: blocked` and moves on — an unattended run answering a question an earlier ticket deliberately left open is the exact failure the map exists to prevent — while `/devflow:task` puts it to the user before starting, since there is someone to ask.
+- **`/devflow:map` picks them up in work mode.** Tickets carrying open questions are part of the frontier: a small one is settled with the user on the spot and recorded, a real fork is graduated into a `grilling` decision ticket. When the answer changes the design, `design.md` changes in the same session — a decision living only in a ticket comment is one the next effort will not find.
+- `/devflow:review` routes its Requirements findings into the same section, through the same graph.
+
 ## 0.34.0 — 2026-08-18
 
 - **`.out-of-scope/` — the record of what the project will deliberately not do.** A decision not to build something is a decision, and it was the one devflow never wrote down: the issue gets closed, the map gets archived, the reasoning evaporates, and the same request returns in different words to be argued from scratch — sometimes winning the second time, not because anything changed but because whoever pushed back is not in the room. `skills/OUT-OF-SCOPE.md` defines the record; the directory sits at the repository root.
