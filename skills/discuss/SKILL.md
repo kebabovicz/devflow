@@ -11,7 +11,7 @@ The user has a picture in their head; you cannot read minds. Every decision you 
 - **From `/devflow:map`**, resolving a `grilling` decision ticket. The scope is that ticket's question, the map's *How it works today* section is your homework already done, and *Decisions* holds what earlier tickets settled — read them before asking, never re-litigate a resolved decision. The output is the decision plus its rationale and rejected alternatives, returned to the map; **the map writes the spec, not you**.
 - **Standalone**, on a whole idea. You own the full protocol below end to end, including writing the spec file.
 
-Everything between the two is identical: the same rounds, the same instruments, the same refusal to decide silently.
+Everything between the two is identical: the same rounds, the same questions, the same refusal to decide silently.
 
 ## Two grounds
 
@@ -26,20 +26,22 @@ The protocol below is the same for both; only the interview axes differ.
 
 Present back what you understood: for a feature — current behavior (as found in the code) → what the user seems to want → the deltas; for greenfield — the idea as heard → the biggest unknowns. If "$ARGUMENTS" contradicts the code or contains an internal contradiction, surface it now.
 
-### 2. Interview in rounds — two instruments
+### 2. Interview in rounds — prose by default
 
-**Closed forks → AskUserQuestion** (2–4 per round). When the answer space is honestly enumerable, present concrete options with your recommendation first — the user picks in seconds instead of writing essays, and building the options forces *you* to think the answer space through.
-
-**Open ground → prose dialogue.** When a menu would flatten the answer — the user's vision of how it should work and feel, motivations, priorities, "walk me through the scenario" — ask in plain text: 1–3 pointed questions at a time, each tied to something just said. A menu with invented options is worse than an honest open question; four short labels cannot hold a discussion.
-
-Prose questions are numbered and carry your recommended answer, so the user can settle a round in a few words:
+**Prose is the instrument.** Ask in plain text, numbered, each question carrying your recommended answer so the user can settle a round in a few words:
 
 ```
-❓ Q1 — <question title>: <the question, as long as it needs to be>
+❓ Q1 — <question title>: <the question, with as much context as it needs>
 ➡️ <your recommended answer, and why>
 ```
 
-A real discussion alternates the two: prose opens a topic and digs into what came back, menus nail down the forks that emerged from it. **Follow up on every answer** — if it opens new ground, contradicts an earlier answer, or hides an ambiguity, chase that in the next round instead of marching down a checklist. Keep looping as long as rounds produce decisions — a real interview is rarely one round, and almost never menu-only.
+Text holds nuance that a menu cannot: the user can accept half an option, name a condition, redraw the fork, or answer something you did not think to ask. That extra half-sentence is usually the load-bearing part of the answer — a picked label discards it silently.
+
+**AskUserQuestion is the exception**, for a fork that is genuinely enumerable AND whose options are genuinely exclusive — a small closed set where the whole answer fits in a short label and no qualification is expected (a base branch, push or keep local, which of three existing libraries). The tell that a menu is wrong: you find yourself writing an option description that carries the real content, or you would not be surprised by an answer outside the list. **A menu that flattens the answer costs more than the seconds it saves** — the user picks the nearest label, you record it as a decision, and the difference between "nearest" and "right" surfaces after implementation.
+
+Never offer a menu for the user's vision of how something should work and feel, for motivations and priorities, for "walk me through the scenario", or for anything where you cannot honestly enumerate the answers.
+
+**Follow up on every answer** — if it opens new ground, contradicts an earlier answer, or hides an ambiguity, chase that in the next round instead of marching down a checklist. Keep looping as long as rounds produce decisions — a real interview is rarely one round.
 
 **Rounds follow the decision tree, not a checklist.** Decisions branch: the answer to one opens the questions that hang off it. The **frontier** is every decision whose prerequisites are already settled — exactly the questions you can ask now without guessing at answers you have not heard. Ask the whole frontier in one round, then recompute it from what came back: settled decisions push the frontier outward, and a question whose answer depends on another question still open belongs to a *later* round. The session converges when the frontier is empty.
 
@@ -96,5 +98,5 @@ Called from the map, hand back to it — it picks the next ticket. Standalone, p
 
 - **No implementation, no file edits beyond the spec file.** The strongest temptation is "it's clear enough, let me just build it" — that instinct is the exact failure this skill exists to stop.
 - Silence is not consent: an unanswered question goes to "open questions"; it never gets a silently-picked answer.
-- At most 4 menu questions or 3 prose questions per round — never a wall of ten. A frontier wider than that is split across rounds, the questions that constrain the most going first.
+- At most 3–4 questions per round — never a wall of ten. A frontier wider than that is split across rounds, the questions that constrain the most going first.
 - Re-running on an existing spec is an update conversation: diff new decisions against the file, don't start over.

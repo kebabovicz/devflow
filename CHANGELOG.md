@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.1 — 2026-08-18
+
+- **discuss: prose is the default instrument, menus are the exception.** Field feedback from the run that designed the map layer: across thirteen questions the user answered three outside the offered options, because the real answer carried a condition no label could hold ("archive it, but keep the archive out of commits too"). A menu buys seconds and spends nuance — the user picks the nearest label, the agent records it as a decision, and the gap between "nearest" and "right" only surfaces after implementation. Questions are now asked as numbered prose, each with a recommended answer so a round still settles in a few words; `AskUserQuestion` is reserved for a fork that is genuinely enumerable AND exclusive, where the whole answer fits in a short label. Two tells that a menu is wrong, written into the skill: the option *description* is carrying the real content, or an answer outside the list would not surprise you. This continues 0.24.1 (which added prose alongside menus) by settling which of the two leads.
+
 ## 0.26.0 — 2026-08-18
 
 **Breaking**: `/devflow:ralph-plan` and `/devflow:ralph-build` are gone, the manifest's `ralph:` section with them. Planning now belongs to `/devflow:map` end to end; the autonomous loop survives as `/devflow:build`, which grinds a map's tickets instead of a TODO list. Existing projects: `/devflow:update` adds `maps:` and flags the orphaned `ralph:` section — an unfinished `TODO.md` has to be re-cut as map tickets by hand, or kept as a plain notes file.
