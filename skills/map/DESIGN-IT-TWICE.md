@@ -36,7 +36,7 @@ Spawn three agents in parallel, each with a different constraint. A fourth joins
 
 These are the baseline, not a liturgy. Where a constraint has no bite here — flexibility nobody will ever use, a common case that does not exist — replace it with one that does. A constraint nobody needs produces a cosmetic variant, and three cosmetic variants are worse than one honest design.
 
-Each agent gets a **technical brief**, separate from the user-facing frame: the files involved, what is coupled to what, what sits behind the seam, and the project's own vocabulary from CLAUDE.md and the map's *How it works today* — so all three name the same things the same way.
+Each agent gets a **technical brief**, separate from the user-facing frame: the files involved, what is coupled to what, what sits behind the seam, the design vocabulary in `${CLAUDE_SKILL_DIR}/../DESIGN-VOCAB.md`, and the project's own vocabulary from CLAUDE.md and the map's *How it works today* — so all three name the same things the same way.
 
 Each returns five things:
 
@@ -48,11 +48,7 @@ Each returns five things:
 
 ## 3. Present, compare, recommend
 
-Show the designs **one at a time** so each can be absorbed, then compare them in prose along three axes:
-
-- **Depth** — how much work the interface hides. A deep design offers a small surface over substantial functionality; a shallow one passes the work back to the caller and only renames it.
-- **Locality** — where a future change lands. Good locality means the change most likely to come next touches one place instead of fanning out.
-- **Seam placement** — where the boundary sits that behavior can be observed through, and therefore what the tests will be able to target.
+Show the designs **one at a time** so each can be absorbed, then compare them in prose along three axes — **depth**, **locality**, and **seam placement**, all three defined in `${CLAUDE_SKILL_DIR}/../DESIGN-VOCAB.md`. Read it before comparing: without those words the comparison collapses into "I like the second one better".
 
 Then **recommend one**, with the reasoning. Not a menu: the user asked for a design, and three options with equal weight hand the work straight back to them. Where elements of two designs combine cleanly, propose the hybrid and say what it borrows from where.
 

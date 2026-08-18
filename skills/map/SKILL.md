@@ -26,7 +26,7 @@ Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`); no manifes
 
 **Maps are never versioned.** Before writing the first file, ensure `<maps.dir>/` is listed in `.git/info/exclude` — add it if absent. Never `.gitignore`: that file is itself committed, and a planning draft is the user's thinking, not the team's documentation. This holds at every `project.footprint` value, `committed` included.
 
-Formats: `${CLAUDE_SKILL_DIR}/MAP-FORMAT.md` for the map and its decision tickets, `${CLAUDE_SKILL_DIR}/DESIGN-FORMAT.md` for the spec and the detailed design, `${CLAUDE_SKILL_DIR}/SLICING.md` for cutting implementation tickets, `${CLAUDE_SKILL_DIR}/DESIGN-IT-TWICE.md` for designing a shape three ways before picking one.
+Formats: `${CLAUDE_SKILL_DIR}/MAP-FORMAT.md` for the map and its decision tickets, `${CLAUDE_SKILL_DIR}/DESIGN-FORMAT.md` for the spec and the detailed design, `${CLAUDE_SKILL_DIR}/SLICING.md` for cutting implementation tickets, `${CLAUDE_SKILL_DIR}/DESIGN-IT-TWICE.md` for designing a shape three ways before picking one. The detailed design speaks the vocabulary in `${CLAUDE_SKILL_DIR}/../DESIGN-VOCAB.md` — module, interface, seam, depth, adapter, used in exactly those senses, because two people agreeing in words while disagreeing in fact is what an unshared vocabulary buys.
 
 ## Two modes
 

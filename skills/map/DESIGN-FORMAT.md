@@ -45,9 +45,10 @@ Four sections, all mandatory. An empty one is an honest line saying why it is em
 ## Interfaces and seams
 
 <which modules are touched; what each exposes to callers; through which seam
-the behavior will be tested. A seam is where behavior can be observed without
-reaching inside. Naming the seam here is what lets tests be written against a
-chosen boundary rather than an accidental one.>
+the behavior will be tested. Module, interface, seam, depth, adapter — used
+in the exact sense of `${CLAUDE_SKILL_DIR}/../DESIGN-VOCAB.md`. Naming the
+seam here is what lets tests be written against a chosen seam rather than an
+accidental one.>
 
 ## Data shapes and contracts
 
