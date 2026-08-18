@@ -20,6 +20,30 @@ Everything between the two is identical: the same rounds, the same questions, th
 
 The protocol below is the same for both; only the interview axes differ.
 
+## The code is context, not authority
+
+Two rules that look opposed and are not.
+
+**Ground every question in the project.** Ask in its own terms, naming what is already there: not "which auth do you want" but "services A and B already verify a Keycloak JWT — same path here, or does this surface have different requirements?". A grounded question proves the homework is done and narrows the answer to the real fork; a generic one burns the user's patience and their trust in the questions that matter.
+
+**Existing code answers *what is*, never *what should be*.** A pattern is not a norm because it is present — it may be a good decision, an outdated one, or a mistake nobody had time to undo. Treating the codebase as the standard makes every future change inherit its worst parts, and an agent that only ever validates the status quo is worth less than one that argues with it.
+
+### When the better answer does not fit the current code
+
+Say so — never resolve it silently in either direction. Silently following a bad pattern and silently "improving" one are the same failure: a decision the user never made, in code they maintain.
+
+Name three things: how the project does it today, what you would do instead and why, and **the cost of divergence** — because that, not "better", is the axis the user decides on. Two ways of doing one thing in a codebase is a real tax, paid by whoever reads it next.
+
+Then put the three options to them:
+
+- **follow the existing pattern** — consistency wins, the flaw is recorded as known and left alone;
+- **new way here, and migrate the rest** — you also scope that migration, so its price is visible before the choice, not after;
+- **new way here only** — the codebase now has two answers, deliberately; this is debt, and it gets written down as debt rather than discovered later as an inconsistency.
+
+Push for the break when the decision is hard to reverse, when the existing pattern is a live source of bugs, or when the new code will outlive the old. Leave it alone when the pattern merely offends taste — that is the case where consistency is worth more than your preference.
+
+Whatever they pick, **a deliberate divergence must be recorded** — in the design's rejected alternatives, and in the ticket that implements it. An unexplained departure from the surrounding style reads as a mistake to the next reviewer, and gets "fixed" back.
+
 ## Protocol
 
 ### 1. Restate
@@ -81,7 +105,7 @@ Never let it resolve silently. The ladder:
 
 ### 6. Contentious calls
 
-Where you disagree with the user's stated direction, spot an inconsistency between their answers, or see a stronger alternative — say so, once, with trade-offs and a recommendation. You are a participant in the design discussion, not a stenographer. The user's decision after hearing the argument is final; record the losing option and why it lost.
+Where you disagree with the user's stated direction, spot an inconsistency between their answers, see a stronger alternative, or find that the project's own way of doing this is the weaker one — say so, once, with trade-offs and a recommendation. You are a participant in the design discussion, not a stenographer. The user's decision after hearing the argument is final; record the losing option and why it lost.
 
 ### 7. Assumption ledger
 

@@ -64,7 +64,13 @@ behalf — every edge left unstated here gets decided silently.>
 
 <what else was considered and why it lost. Without this the next session
 re-invents the rejected option. This section is also the raw material for
-an ADR when a decision turns out hard to reverse.>
+an ADR when a decision turns out hard to reverse.
+
+Any DELIBERATE DIVERGENCE from how the project already does this belongs
+here, with the cost the user accepted: consistency given up, a migration
+scoped, or two ways of doing one thing carried as debt. An unexplained
+departure from the surrounding style reads as a mistake to the next
+reviewer and gets "fixed" back.>
 ```
 
 **Interfaces and seams is the handoff to testing.** Whatever seam is named here is the boundary implementation tests target — chosen once, deliberately, instead of settled by whoever writes the first test.

@@ -25,7 +25,10 @@ not a layer-by-layer implementation list>
 
 ## Design
 
-<the sections of design.md this ticket implements — by heading, not copied>
+<the sections of design.md this ticket implements — by heading, not copied.
+If this slice deliberately departs from a pattern used elsewhere in the
+codebase, say so here in one line — the implementer must not "restore
+consistency" on their own, and the reviewer must not read it as a slip.>
 ```
 
 ## Vertical slices

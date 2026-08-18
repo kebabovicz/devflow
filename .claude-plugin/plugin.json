@@ -1,7 +1,7 @@
 {
   "name": "devflow",
   "description": "Manifest-driven development automation: flow testing against live services, Ralph-style task loops, related-repo sync (frontend/backend/mobile/infra), docs hygiene. Onboard any project with /devflow:init.",
-  "version": "0.26.2",
+  "version": "0.26.3",
   "author": {
     "name": "kebabovicz"
   }
