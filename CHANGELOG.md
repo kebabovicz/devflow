@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.36.0 — 2026-08-18
+
+- **The plugin description stopped advertising a skill that no longer exists.** It still said "Ralph-style task loops" four versions after `ralph-plan` and `ralph-build` were removed, and said nothing about the design layer, so the first thing anyone read in `/plugin` described devflow as it was in 0.25. It now names what is actually there: decision maps that design the work before code, the task cycle and the unattended build loop over their tickets, two-check review, bug diagnosis, flow testing, docs and tracker hygiene.
+- **README and `docs/GUIDE.md` caught up with the last eight versions**: `/devflow:diagnose` has a command-reference entry, the review entry describes both checks rather than one, the map entry mentions designing an expensive shape three ways, `.out-of-scope/` appears in the project layout, and the four shared rule files beside the skills — `OUTPUT-STYLE.md`, `DESIGN-VOCAB.md`, `OUT-OF-SCOPE.md`, `review/SMELLS.md` — are listed where a reader can find them.
+
 ## 0.35.0 — 2026-08-18
 
 - **A ticket now has a place for the questions the previous ticket left behind.** 0.28.0 established the rule — a decision taken while implementing one slice does not rewrite the chain, it becomes a question in the ticket it concerns — but the ticket format had nowhere to put it, so the question landed as free text nobody looks for. `tickets/NN-slug.md` gains **`## Open questions`**: empty when the ticket is cut, filled later by whoever finds something upstream, one line each naming where it came from and what it may change.

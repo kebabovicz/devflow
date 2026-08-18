@@ -4,7 +4,7 @@
 
 Long agent sessions drift: "done" that only compiled, rules quietly forgotten by hour six, a careless `down -v`, onboarding from zero on every new project. devflow turns the discipline into mechanics:
 
-- **skills advise** — processes for tasks, flow testing, review, tracker and docs hygiene;
+- **skills advise** — the work gets designed before it gets built (decision maps, detailed design, slicing), then implemented, diagnosed, reviewed, and kept honest against the docs and the tracker;
 - **hooks enforce** — deterministic guards: destroying docker volumes or committing to the base branch hits a hard stop, whatever the model "thinks";
 - **the manifest knows your project** — env, auth, tests, conventions in one file; agents hardcode nothing, so the same plugin fits a microservice fleet and a weekend pet project.
 - **one voice** — every skill asks and reports by one style rule (`skills/OUTPUT-STYLE.md`): plain words, front-loaded sentences, lists only where something is genuinely being listed, the next action on the last line.
@@ -12,6 +12,8 @@ Long agent sessions drift: "done" that only compiled, rules quietly forgotten by
 You set the goals and make the decisions — agents do the work: bring up the environment, implement, verify against live services, commit by your conventions, keep the tracker honest. Large tasks survive any session: decisions, design, and progress live in files, not in the context window.
 
 It is not a framework — devflow never touches your code's architecture.
+
+Four rule files sit beside the skills and are read by whichever ones need them: `OUTPUT-STYLE.md` (how devflow talks to you), `DESIGN-VOCAB.md` (module, interface, seam, depth — used in exactly those senses), `OUT-OF-SCOPE.md` (the record of what the project will not do), `review/SMELLS.md` (the code-smell baseline that runs in every project).
 
 **📖 Full guide: [docs/GUIDE.md](docs/GUIDE.md)** — why, how it works, command reference, scenarios, parallel work, troubleshooting.
 
@@ -21,8 +23,9 @@ It is not a framework — devflow never touches your code's architecture.
 devflow plugin (this repo, portable)        each project (thin layer)
 ├── skills    /devflow:*                    ├── .devflow/project.yml   ← the manifest
 ├── agents    api-tester, docs-sync         ├── .devflow/maps/         ← decision maps (never committed)
-├── hooks     guard, stop-gate              ├── .devflow/specs/ (standalone specs)
-└── templates project.yml                   └── .claude/CLAUDE.md, settings.json
+├── hooks     guard, stop-gate, digest      ├── .devflow/specs/        ← standalone specs
+└── templates project.yml                   ├── .out-of-scope/         ← what this project won't do
+                                            └── .claude/CLAUDE.md, settings.json
 ```
 
 Everything project-specific lives in the manifest: how to start the environment, obtain an auth token, run tests, where the docs live, which repos are related, which tracker and git conventions apply. Onboarding a new project is one command: `/devflow:init` explores the repo and builds the manifest with you.
