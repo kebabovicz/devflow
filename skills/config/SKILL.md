@@ -18,7 +18,7 @@ Render the manifest as compact sections (skip empty sections silently; a project
 - **Git conventions**: base branch, branch pattern, commit pattern, what happens on done.
 - **Tracker**: system, project, language, labels, board statuses (wip/done if recorded).
 - **Related repos**: name → path, branch, relationship.
-- **Ralph**: TODO path + its state (n unchecked / m done / blocked items), specs dir.
+- **Maps**: map directory + each open effort's state (n unresolved decisions / m tickets left), standalone specs dir.
 - **Docs map**: flow → doc file pairs.
 
 Close with a status line:

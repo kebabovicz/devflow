@@ -28,7 +28,7 @@ devflow guarantees mapped docs exist and don't lie; when they don't exist yet, i
 3. **Confluence pages are part of the map**: a `docs.map` entry with a `confluence` page (see `docs.confluence` in the manifest) is audited claim-by-claim like a file — fetch the page via the Atlassian MCP, verify its statements against the code. **Confluence stays in the main session, never in a docs-sync subagent** (subagents have no MCP tools). Edits are outward-facing: show the draft, apply only on approval, stamp with the commit/ref the update reflects. MCP unavailable or unauthenticated → report those pages as skipped with a `/mcp` pointer — never as accurate. Author mode: when `docs.confluence.site` is configured, offer publishing new/mapped docs as pages in `docs.confluence.space` — same approval gate.
 4. **Verify claim by claim**: for each doc, check every concrete statement (endpoints, statuses, field names, sequence of steps, config keys) against the code. Code is the source of truth for *what is*; the doc may still be right about *what should be* — when behavior and doc disagree, classify: stale doc vs actual bug.
 5. **Report**: per doc — ✅ accurate / 📝 stale (with the exact outdated claims) / 🐛 doc reveals a code bug.
-6. **Fix stale docs** on approval: minimal edits, preserve the doc's structure and language. Bugs go to the user (or to `/devflow:ralph-plan`), never silently "fixed" by rewriting the doc to match broken behavior.
+6. **Fix stale docs** on approval: minimal edits, preserve the doc's structure and language. Bugs go to the user (or to `/devflow:map`), never silently "fixed" by rewriting the doc to match broken behavior.
 
 ## Swarm mode (`swarm` — verified Workflow pipeline, opt-in)
 

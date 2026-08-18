@@ -19,10 +19,10 @@ project:
                              # whole stack; services lists every HTTP surface across packages;
                              # test.run is the aggregate command, per-package commands go in comments.
   # committed = devflow files (.devflow/, .claude/settings.json, CLAUDE.md section)
-  #             are part of the repo — teammates get them, ralph progress survives machines.
+  #             are part of the repo — teammates get them.
   # local     = devflow leaves NO traces in git: files excluded via .git/info/exclude
   #             (never .gitignore — that file is committed and would betray the setup);
-  #             ralph TODO is not committed, progress lives on this machine only.
+  #             decision maps are excluded regardless (see the maps section).
   footprint: committed       # committed | local
 
 env:
@@ -113,6 +113,14 @@ tracker:
   # Credentials NEVER live here (this file is committed). Auth via the Atlassian
   # MCP (OAuth) or JIRA_EMAIL / JIRA_API_TOKEN env vars for the REST fallback.
 
-ralph:
-  specs_dir: .devflow/specs  # task specs live here
-  todo: .devflow/TODO.md     # prioritized task list, survives sessions
+maps:
+  # Decision maps (/devflow:map): an idea is carried to ready implementation
+  # tickets through recon → requirements → concept → spec → detailed design →
+  # slicing, with every decision recorded in a file instead of a session.
+  dir: .devflow/maps         # one directory per effort: map.md, issues/, spec.md, design.md, tickets/
+  # NEVER committed, whatever project.footprint says: maps are the author's
+  # thinking, not team documentation. init excludes them via .git/info/exclude
+  # (never .gitignore — that file is committed and would expose the draft).
+  # A finished effort is archived into <dir>/.done/<effort>/ — same exclusion,
+  # out of sight, still on disk if the reasoning is ever needed again.
+  specs_dir: .devflow/specs  # standalone specs written outside any map (/devflow:discuss on its own)

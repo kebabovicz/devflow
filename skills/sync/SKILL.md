@@ -17,7 +17,7 @@ Read `.devflow/project.yml` → `related_repos`, then overlay `.devflow/project.
    - `provider` (we call their API): their contracts/DTOs, routes, versioning, breaking changes;
    - `sibling` (shared contracts/protos): the shared definitions both depend on.
 3. **Map to this repo**: for every relevant change find the local counterpart. Classify: ✅ already compatible / 🔧 change needed here / ❓ intent unclear.
-4. **Propose a plan** for the 🔧 items. Discuss; do not implement before approval. Execution goes through the normal flow: `task` for small scope, `ralph-plan` for large.
+4. **Propose a plan** for the 🔧 items. Discuss; do not implement before approval. Execution goes through the normal flow: `/devflow:map` when the change needs designing, `/devflow:task` when it does not.
 5. **After the work is done and verified**, update `.devflow/sync/<name>.json` with the new ref.
 
 ## Rules

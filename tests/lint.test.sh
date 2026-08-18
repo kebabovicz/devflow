@@ -49,7 +49,7 @@ else
   printf '  skip yaml parse (python3+pyyaml not available)\n'
 fi
 # Keys the hooks read with grep (first match wins) must stay unique.
-for key in base_branch branch_pattern commit_pattern todo footprint; do
+for key in base_branch branch_pattern commit_pattern footprint dir; do
   n=$(grep -cE "^[[:space:]]*$key:" "$ROOT/templates/project.yml")
   if [ "$n" -eq 1 ]; then ok "template key unique: $key"; else bad "template key '$key' appears $n times — hooks grep the first match"; fi
 done

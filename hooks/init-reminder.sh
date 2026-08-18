@@ -8,7 +8,7 @@
 # This hook puts one line into the session context so both the user and the
 # agent start the session knowing there is unfinished setup.
 #
-# Design rules (same as guard.sh / ralph-stop-gate.sh):
+# Design rules (same as guard.sh / stop-gate.sh):
 #   * FAIL-OPEN: any parsing/tooling problem => exit 0 (stay silent).
 #   * Scoped: only fires when the session cwd contains .devflow/INIT.md.
 #   * Never blocks: SessionStart stdout is informational context, exit 0 always.

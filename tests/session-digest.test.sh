@@ -51,26 +51,8 @@ check "no git line when git section is absent" "$?"
 
 # Conditional state lines — silent when clean, present when actionable.
 out=$(run "$PROJ")
-! printf '%s' "$out" | grep -q 'devflow ralph:'
-check "no ralph line without a TODO file" "$?"
 ! printf '%s' "$out" | grep -q 'devflow manifest:'
 check "no marker line on a clean manifest" "$?"
-
-cat > "$PROJ/.devflow/TODO.md" <<'EOF'
-- [x] task one — done
-- [ ] task two
-- [ ] task three
-## Blocked
-- task four: waiting on user answer
-EOF
-out=$(run "$PROJ")
-printf '%s' "$out" | grep -q 'devflow ralph: 2 unchecked task(s), 1 blocked'
-check "ralph line counts unchecked and blocked" "$?"
-
-printf -- '- [x] all done\n' > "$PROJ/.devflow/TODO.md"
-out=$(run "$PROJ")
-! printf '%s' "$out" | grep -q 'devflow ralph:'
-check "no ralph line when TODO is fully checked" "$?"
 
 cat > "$PROJ/.devflow/project.yml" <<'EOF'
 git:
@@ -84,6 +66,54 @@ EOF
 out=$(run "$PROJ")
 printf '%s' "$out" | grep -q 'devflow manifest: 2 UNVERIFIED, 1 TODO'
 check "marker line counts UNVERIFIED and TODO" "$?"
+
+# ── Decision maps ──────────────────────────────────────────────────────────
+out=$(run "$PROJ")
+! printf '%s' "$out" | grep -q 'devflow map'
+check "no map line without a map directory" "$?"
+
+EFFORT="$PROJ/.devflow/maps/billing"
+mkdir -p "$EFFORT/issues"
+printf '# billing\n' > "$EFFORT/map.md"
+# 01 resolved; 02 open and unblocked; 03 open but blocked by 04; 04 claimed.
+printf 'Status: resolved\nBlocked by: none\n'  > "$EFFORT/issues/01-currency.md"
+printf 'Status: open\nBlocked by: 01\n'        > "$EFFORT/issues/02-rounding.md"
+printf 'Status: open\nBlocked by: 04\n'        > "$EFFORT/issues/03-refunds.md"
+printf 'Status: claimed\nBlocked by: none\n'   > "$EFFORT/issues/04-invoices.md"
+out=$(run "$PROJ")
+printf '%s' "$out" | grep -q "devflow map 'billing': 3 open decision(s), 1 ready to take"
+check "map line counts unresolved decisions and the takeable frontier" "$?"
+
+# All decisions resolved but nothing cut yet → the map still owes its outputs.
+printf 'Status: resolved\n' > "$EFFORT/issues/02-rounding.md"
+printf 'Status: resolved\n' > "$EFFORT/issues/03-refunds.md"
+printf 'Status: resolved\n' > "$EFFORT/issues/04-invoices.md"
+out=$(run "$PROJ")
+printf '%s' "$out" | grep -q "devflow map 'billing': every decision resolved, no tickets cut yet"
+check "map line nags when decisions are done but tickets are not cut" "$?"
+
+# Implementation tickets exist → the line switches to what is left to build.
+mkdir -p "$EFFORT/tickets"
+printf 'Status: done\n' > "$EFFORT/tickets/01-schema.md"
+printf 'Status: open\n' > "$EFFORT/tickets/02-endpoint.md"
+out=$(run "$PROJ")
+printf '%s' "$out" | grep -q "devflow map 'billing': decisions settled, 1 implementation ticket(s) left"
+check "map line switches to implementation tickets once decisions are settled" "$?"
+
+printf 'Status: done\n' > "$EFFORT/tickets/02-endpoint.md"
+out=$(run "$PROJ")
+! printf '%s' "$out" | grep -q 'devflow map'
+check "no map line when the whole effort is done" "$?"
+
+# A custom maps.dir in the manifest is honored.
+CUSTOM="$SANDBOX/custom"
+mkdir -p "$CUSTOM/.devflow" "$CUSTOM/planning/search/issues"
+printf 'maps:\n  dir: planning\n' > "$CUSTOM/.devflow/project.yml"
+printf '# search\n' > "$CUSTOM/planning/search/map.md"
+printf 'Status: open\nBlocked by: none\n' > "$CUSTOM/planning/search/issues/01-scope.md"
+out=$(run "$CUSTOM")
+printf '%s' "$out" | grep -q "devflow map 'search': 1 open decision(s), 1 ready to take"
+check "map line honors a custom maps.dir" "$?"
 
 echo
 echo "session-digest.test.sh: $PASS passed, $FAIL failed"

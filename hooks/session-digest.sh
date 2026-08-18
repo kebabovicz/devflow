@@ -49,17 +49,57 @@ echo "devflow data: local volumes are persistent test state — never destroy th
 # A line that appears only when actionable gets read; a line that is always
 # there gets skimmed. When the project is clean, the digest stays 3 lines.
 
-# Ralph loop state: started large work must not be invisible at session start.
-todo=$(yml_value todo)
-[ -z "$todo" ] && todo=".devflow/TODO.md"
-if [ -f "$cwd/$todo" ]; then
-  unchecked=$(grep -cE '^[[:space:]]*- \[ \]' "$cwd/$todo" 2>/dev/null) || unchecked=0
-  blocked=$(awk '/^## Blocked/{b=1;next} /^## /{b=0} b && /^[[:space:]]*-/{n++} END{print n+0}' "$cwd/$todo" 2>/dev/null) || blocked=0
-  if [ "${unchecked:-0}" -gt 0 ] || [ "${blocked:-0}" -gt 0 ]; then
-    line="devflow ralph: $unchecked unchecked task(s)"
-    [ "${blocked:-0}" -gt 0 ] && line="$line, $blocked blocked"
-    echo "$line in $todo — /devflow:ralph-build continues the loop; blocked items need the user."
-  fi
+# Decision maps: an effort planned but not carried through is the easiest thing
+# to abandon silently — the map lives outside git, so nothing else reminds of it.
+# `dir` is the sole key of the manifest's `maps:` section (lint keeps it unique).
+map_dir=$(yml_value dir)
+[ -z "$map_dir" ] && map_dir=".devflow/maps"
+if [ -d "$cwd/$map_dir" ]; then
+  for mapfile in "$cwd/$map_dir"/*/map.md; do
+    [ -f "$mapfile" ] || continue
+    effort_dir=$(dirname "$mapfile")
+    effort=$(basename "$effort_dir")
+
+    # Decision tickets: unresolved ones, and which of them are takeable now
+    # (unblocked = every id in "Blocked by" already resolved, and unclaimed).
+    resolved=" " unresolved=0 ready=0
+    if [ -d "$effort_dir/issues" ]; then
+      for f in "$effort_dir/issues"/*.md; do
+        [ -f "$f" ] || continue
+        grep -qiE '^[[:space:]]*Status:[[:space:]]*resolved' "$f" 2>/dev/null \
+          && resolved="$resolved$(basename "$f" | sed 's/[^0-9].*$//') "
+      done
+      for f in "$effort_dir/issues"/*.md; do
+        [ -f "$f" ] || continue
+        grep -qiE '^[[:space:]]*Status:[[:space:]]*resolved' "$f" 2>/dev/null && continue
+        unresolved=$((unresolved+1))
+        grep -qiE '^[[:space:]]*Status:[[:space:]]*claimed' "$f" 2>/dev/null && continue
+        blockers=$(grep -iE '^[[:space:]]*Blocked by:' "$f" 2>/dev/null | head -1 \
+          | sed -e 's/^[^:]*:[[:space:]]*//' -e 's/[^0-9]\{1,\}/ /g')
+        blocked=0
+        for b in $blockers; do
+          case "$resolved" in *" $b "*) ;; *) blocked=1 ;; esac
+        done
+        [ "$blocked" -eq 0 ] && ready=$((ready+1))
+      done
+    fi
+
+    if [ "$unresolved" -gt 0 ]; then
+      echo "devflow map '$effort': $unresolved open decision(s), $ready ready to take — /devflow:map continues it; decisions live in $map_dir/$effort/."
+      continue
+    fi
+
+    # Decisions all settled: either the map still owes its three outputs,
+    # or what is left is implementation tickets.
+    if [ ! -d "$effort_dir/tickets" ]; then
+      # Only nag once decisions actually exist — an empty scaffold is not an effort.
+      [ -d "$effort_dir/issues" ] && [ -n "$(ls -A "$effort_dir/issues" 2>/dev/null)" ] \
+        && echo "devflow map '$effort': every decision resolved, no tickets cut yet — /devflow:map closes it into spec, design, and tickets."
+    else
+      left=$(grep -LiE '^[[:space:]]*Status:[[:space:]]*done' "$effort_dir/tickets"/*.md 2>/dev/null | wc -l | tr -d ' ')
+      [ "${left:-0}" -gt 0 ] && echo "devflow map '$effort': decisions settled, ${left} implementation ticket(s) left — /devflow:task $map_dir/$effort/tickets/<ticket>.md."
+    fi
+  done
 fi
 
 # Manifest hygiene: unconfirmed settings should nag quietly until settled.
