@@ -41,6 +41,20 @@ Text holds nuance that a menu cannot: the user can accept half an option, name a
 
 Never offer a menu for the user's vision of how something should work and feel, for motivations and priorities, for "walk me through the scenario", or for anything where you cannot honestly enumerate the answers.
 
+### 3. Dig for the intent, not just the answers
+
+A request names a want; it rarely names the intent behind it. "Authentication that suits this project" carries its whole meaning in *suits* — a word that means nothing until this particular user fills it in, and that you will otherwise fill in with your own default. **Every vague qualifier is a question**: suitable, simple, proper, standard, normal, like everyone does it.
+
+Three moves turn an answer into an understanding. Reach for whichever fits; a real exchange uses all of them.
+
+- **Ask why, then distrust the first why.** "Because it's simpler" is a proxy, not a reason — simpler than what, and simple along which axis? Behind it sits a deadline, an unfamiliarity, a burned hand from a previous project, or a requirement nobody wrote down. The reason is what a future decision gets checked against; the proxy is worthless six months from now.
+- **Offer concrete options to map the space, not to make the user shop.** Two or three real alternatives with their trade-offs — how the user *reacts* to them tells you more than a direct question does, because rejecting something specific is easier than describing something absent. Their objection to option B usually names the constraint they never mentioned.
+- **Test the answer with a scenario that would break it.** Not speculation ("what if someday…") — a concrete, checkable near future: a second consumer, a second auth provider, ten times the data, a teammate joining, this thing failing at 3am. If it is planned, the decision changes now; if it is not, that is a **non-goal**, recorded as one. Either way an unexamined assumption stops being invisible.
+
+Chase the answer, not the checklist: an answer that opens new ground, contradicts an earlier one, or hides an ambiguity is worth more than the next question on your list.
+
+### 4. Interview mechanics
+
 **Follow up on every answer** — if it opens new ground, contradicts an earlier answer, or hides an ambiguity, chase that in the next round instead of marching down a checklist. Keep looping as long as rounds produce decisions — a real interview is rarely one round.
 
 **Rounds follow the decision tree, not a checklist.** Decisions branch: the answer to one opens the questions that hang off it. The **frontier** is every decision whose prerequisites are already settled — exactly the questions you can ask now without guessing at answers you have not heard. Ask the whole frontier in one round, then recompute it from what came back: settled decisions push the frontier outward, and a question whose answer depends on another question still open belongs to a *later* round. The session converges when the frontier is empty.
@@ -57,7 +71,7 @@ A question earns its slot only when all three hold:
 
 **Greenfield axes**: audience and the pain being removed • the core loop — the one scenario the product exists for • MVP cut: what's in v1, what's explicitly LATER • platform and stack • data: accounts, sync, offline, privacy • distribution and monetization, when relevant • done-criteria for v1.
 
-### 3. "I don't know" is a legitimate answer
+### 5. "I don't know" is a legitimate answer
 
 Never let it resolve silently. The ladder:
 
@@ -65,17 +79,19 @@ Never let it resolve silently. The ladder:
 2. no credible options come to mind → don't invent plausible-sounding ones: ask narrowing follow-up questions until options emerge;
 3. still open, or the answer needs real evidence (market, competitors, a technology choice) → record it as an open question and offer `/devflow:research <question>` — never fake research inline.
 
-### 4. Contentious calls
+### 6. Contentious calls
 
 Where you disagree with the user's stated direction, spot an inconsistency between their answers, or see a stronger alternative — say so, once, with trade-offs and a recommendation. You are a participant in the design discussion, not a stenographer. The user's decision after hearing the argument is final; record the losing option and why it lost.
 
-### 5. Assumption ledger
+### 7. Assumption ledger
 
 Everything you would still decide silently after the interview goes into an explicit list: "unless you say otherwise, I will: X, Y, Z". The user confirms or edits it. An assumption the user never saw is a future bug report.
 
-### 6. Converge and write
+### 8. Converge and write
 
-When a round produces no new decisions — stop asking; interrogation past that point is theater.
+**The bar is shared understanding, not an empty question list.** Before writing anything, restate the intent in your own words — what the user is actually after, why the chosen shape serves it, and what it deliberately does not cover — and get that confirmed. Not a list of decisions read back: the picture they add up to. If you cannot state the *why* behind a decision without hedging, that decision was never understood, and one more question is cheaper now than a rewrite later.
+
+When a round produces no new decisions and the restatement lands — stop asking; interrogation past that point is theater.
 
 **Called from the map**: write the decision, its rationale, and the alternatives that lost into the ticket's `## Answer`, and hand the gist back — the map records it and clears the fog the answer lifted. Stop there; the spec is the map's job, and a second author guarantees two versions that drift.
 

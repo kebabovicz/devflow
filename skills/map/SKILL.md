@@ -34,7 +34,7 @@ Pick by what exists: no map for "$ARGUMENTS" → **chart** it; a map exists (by 
 
 1. **Recon first.** Before a single question, find out how the affected area works today: the flows, the extension points, the traps. This is the recon stage, and it is the agent's job — never the user's. Write what you found into the map's *How it works today* section. A question the repo already answers burns the user's patience and their trust in the questions that matter.
 2. **Name the destination.** What reaching the end of this map looks like — a built feature, a decision locked, a migration done. The destination fixes the scope, so it is settled first: everything past it is out of scope, and the fog only ever gathers toward it.
-3. **Map the frontier — breadth first.** Fan out across the whole space rather than deep on one thread, surfacing the decisions this work hangs on. Call `${CLAUDE_SKILL_DIR}/../discuss/SKILL.md` for the interview discipline.
+3. **Map the frontier — breadth first.** Fan out across the whole space rather than deep on one thread, surfacing the decisions this work hangs on. Call `${CLAUDE_SKILL_DIR}/../discuss/SKILL.md` for the interview discipline — including its rule that a vague qualifier (*suitable*, *simple*, *standard*) is a question, never a value you fill in yourself.
 4. **Create the map**, then the tickets you can already state sharply, then wire their `Blocked by` edges in a second pass. What you cannot state sharply yet goes to *Not yet specified* — do not pre-slice fog into ticket-sized pieces.
 5. **Fire the research tickets** — every `research` ticket can be resolved in parallel by subagents right now, since none of them needs the user. Then stop: charting is one session's work and resolves nothing by hand.
 
