@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.37.1 — 2026-08-18
+
+- **`sync-docs` no longer proposes a `contracts` document.** Its author mode offered a four-doc skeleton — architecture, environments, contracts, testing — and the contracts one restated the API surface: endpoints, DTOs, the CLI. That is the fastest-rotting document a project can own, invalidated by every route or field change and paid for forever by whoever forgets. The skeleton is now three docs, and the skill says where the surface actually lives: the code, and the schema in `services.<name>.schema`.
+- **Existing API docs are untouched.** A team that already wrote one and mapped it keeps it, and it is audited claim by claim like any other doc. This removes the creation, not the file.
+
 ## 0.37.0 — 2026-08-18
 
 - **`/devflow:handoff` works in both directions now.** It could write a handoff and never read one, so picking work back up meant telling a fresh session by hand which file to open — the exact clerical step the handoff exists to remove. Called with a word meaning *continue* — in whatever language it arrives — it finds the last handoff, checks it, shows where it would continue, and waits.
