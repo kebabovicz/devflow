@@ -15,6 +15,8 @@ An idea arrives and the way from here to a built feature is not visible yet. Thi
 
 Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`); no manifest → use the default and say so, the map needs nothing else from it.
 
+**In a git worktree, the map is not where you are.** A worktree checks out tracked files only, and the map is excluded from git on purpose, so it exists solely in the main working tree. Resolve its root from the repository's common git directory — `git rev-parse --git-common-dir`, then take its parent — and read and write the map there. Every worktree of a repo shares one map; a second copy would be a second set of decisions.
+
 ```
 <maps.dir>/<kebab-slug>/
   map.md              the index — loaded once per session

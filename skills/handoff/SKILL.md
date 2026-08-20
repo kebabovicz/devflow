@@ -114,7 +114,7 @@ A fresh session, an empty head, and somewhere on disk the last one wrote down wh
 Three places, and nothing clever:
 
 - ticket files carrying a `## Handoff` section — usually with `Status: in progress`;
-- `HANDOFF.md` in any open effort under `<maps.dir>`;
+- `HANDOFF.md` in any open effort under `<maps.dir>` — resolved in the **main working tree** (`git rev-parse --git-common-dir`'s parent), since a worktree does not carry the map;
 - a path given in "$ARGUMENTS", which wins over both.
 
 **Several candidates → list them and ask which one**: path, one line of what it is about, and when it was last modified. Guessing here is how a session resumes the wrong work and does not notice for an hour. **One candidate** → take it, and say which. **None** → say plainly that there is nothing to pick up, and stop; do not perform a search across the repository to look thorough.

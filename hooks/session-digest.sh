@@ -54,20 +54,42 @@ echo "devflow data: local volumes are persistent test state — never destroy th
 # `dir` is the sole key of the manifest's `maps:` section (lint keeps it unique).
 map_dir=$(yml_value dir)
 [ -z "$map_dir" ] && map_dir=".devflow/maps"
-if [ -d "$cwd/$map_dir" ]; then
-  for mapfile in "$cwd/$map_dir"/*/map.md; do
+
+# Maps live in the MAIN working tree — a git worktree checks out tracked files
+# only, and the map is excluded from git by design. Resolve the root from the
+# common git dir so a session inside a worktree sees the same map as the main
+# checkout instead of no map at all.
+maps_root="$cwd"
+common=$(git -C "$cwd" rev-parse --git-common-dir 2>/dev/null) || common=""
+if [ -n "$common" ]; then
+  case "$common" in /*) ;; *) common="$cwd/$common" ;; esac
+  resolved=$(cd "$(dirname "$common")" 2>/dev/null && pwd) || resolved=""
+  [ -n "$resolved" ] && maps_root="$resolved"
+fi
+
+# symbolic-ref first: it answers on an unborn branch too (a repo whose first
+# commit has not landed), where rev-parse HEAD fails outright.
+branch=$(git -C "$cwd" symbolic-ref --quiet --short HEAD 2>/dev/null) || branch=""
+if [ -z "$branch" ]; then
+  branch=$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null) || branch=""
+fi
+[ "$branch" = "HEAD" ] && branch=""
+
+if [ -d "$maps_root/$map_dir" ]; then
+  mine="" others="" other_count=0
+  for mapfile in "$maps_root/$map_dir"/*/map.md; do
     [ -f "$mapfile" ] || continue
     effort_dir=$(dirname "$mapfile")
     effort=$(basename "$effort_dir")
 
     # Decision tickets: unresolved ones, and which of them are takeable now
     # (unblocked = every id in "Blocked by" already resolved, and unclaimed).
-    resolved=" " unresolved=0 ready=0
+    resolved_ids=" " unresolved=0 ready=0
     if [ -d "$effort_dir/issues" ]; then
       for f in "$effort_dir/issues"/*.md; do
         [ -f "$f" ] || continue
         grep -qiE '^[[:space:]]*Status:[[:space:]]*resolved' "$f" 2>/dev/null \
-          && resolved="$resolved$(basename "$f" | sed 's/[^0-9].*$//') "
+          && resolved_ids="$resolved_ids$(basename "$f" | sed 's/[^0-9].*$//') "
       done
       for f in "$effort_dir/issues"/*.md; do
         [ -f "$f" ] || continue
@@ -78,28 +100,51 @@ if [ -d "$cwd/$map_dir" ]; then
           | sed -e 's/^[^:]*:[[:space:]]*//' -e 's/[^0-9]\{1,\}/ /g')
         blocked=0
         for b in $blockers; do
-          case "$resolved" in *" $b "*) ;; *) blocked=1 ;; esac
+          case "$resolved_ids" in *" $b "*) ;; *) blocked=1 ;; esac
         done
         [ "$blocked" -eq 0 ] && ready=$((ready+1))
       done
     fi
 
+    line=""
     if [ "$unresolved" -gt 0 ]; then
-      echo "devflow map '$effort': $unresolved open decision(s), $ready ready to take — /devflow:map continues it; decisions live in $map_dir/$effort/."
-      continue
-    fi
-
-    # Decisions all settled: either the map still owes its three outputs,
-    # or what is left is implementation tickets.
-    if [ ! -d "$effort_dir/tickets" ]; then
+      line="devflow map '$effort': $unresolved open decision(s), $ready ready to take — /devflow:map continues it; decisions live in $map_dir/$effort/."
+    elif [ ! -d "$effort_dir/tickets" ]; then
       # Only nag once decisions actually exist — an empty scaffold is not an effort.
       [ -d "$effort_dir/issues" ] && [ -n "$(ls -A "$effort_dir/issues" 2>/dev/null)" ] \
-        && echo "devflow map '$effort': every decision resolved, no tickets cut yet — /devflow:map closes it into spec, design, and tickets."
+        && line="devflow map '$effort': every decision resolved, no tickets cut yet — /devflow:map closes it into spec, design, and tickets."
     else
       left=$(grep -LiE '^[[:space:]]*Status:[[:space:]]*done' "$effort_dir/tickets"/*.md 2>/dev/null | wc -l | tr -d ' ')
-      [ "${left:-0}" -gt 0 ] && echo "devflow map '$effort': decisions settled, ${left} implementation ticket(s) left — /devflow:task $map_dir/$effort/tickets/<ticket>.md."
+      [ "${left:-0}" -gt 0 ] \
+        && line="devflow map '$effort': decisions settled, ${left} implementation ticket(s) left — /devflow:task $map_dir/$effort/tickets/<ticket>.md."
+    fi
+    [ -z "$line" ] && continue
+
+    # One effort belongs to this working tree — the one whose map names the
+    # branch checked out here. The rest are other people's tasks (or your own,
+    # in another worktree) and get one collapsed line: a digest that prints a
+    # paragraph per open effort stops being read at around the third one.
+    if [ -n "$branch" ] && grep -qF -- "$branch" "$mapfile" 2>/dev/null; then
+      mine="$mine$line
+"
+    else
+      other_count=$((other_count+1))
+      others="$others$line
+"
     fi
   done
+
+  if [ -n "$mine" ]; then
+    printf '%s' "$mine"
+    [ "$other_count" -gt 0 ] \
+      && echo "devflow maps: $other_count other open effort(s) in $map_dir/ — not on this branch."
+  elif [ "$other_count" -eq 1 ]; then
+    # Nothing claims this branch and there is exactly one open effort: an older
+    # map that never recorded a branch, or work not branched yet. Show it.
+    printf '%s' "$others"
+  elif [ "$other_count" -gt 1 ]; then
+    echo "devflow maps: $other_count open effort(s) in $map_dir/, none naming branch '${branch:-?}' — /devflow:map lists them."
+  fi
 fi
 
 # Manifest hygiene: unconfirmed settings should nag quietly until settled.

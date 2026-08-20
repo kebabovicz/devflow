@@ -7,9 +7,11 @@ disable-model-invocation: true
 
 **Read `${CLAUDE_SKILL_DIR}/../OUTPUT-STYLE.md` before your first message and follow it** — it binds every message this skill prints and every file it writes for a person to read.
 
-Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`). Tickets live at `<maps.dir>/<effort>/tickets/`, their design at `<maps.dir>/<effort>/design.md`. No tickets anywhere → stop and say `/devflow:map` has to close an effort into tickets first.
+Read `.devflow/project.yml` → `maps.dir` (default `.devflow/maps`). Tickets live at `<maps.dir>/<effort>/tickets/`, their design at `<maps.dir>/<effort>/design.md`. **In a worktree the map lives in the main working tree** (it is git-excluded, so it is not checked out here): resolve its root from `git rev-parse --git-common-dir`'s parent. No tickets anywhere → stop and say `/devflow:map` has to close an effort into tickets first.
 
 This is the **autonomous** counterpart of `/devflow:task`: same cycle, no approval gates, one ticket per invocation. Everything it needs was decided in the map — that is what makes running it unattended defensible.
+
+**Record the branch in the effort's `map.md`** — one line, the branch this effort's work lands on. The stop gate reads it to tell whose uncommitted work it is looking at: without it, a repo with several efforts blocks whichever session happens to stop first.
 
 **Branch check first**: you must be on a task branch, never `git.base_branch` (the guard blocks commits there anyway). If the effort's tickets name a branch, switch to it; on the base branch, create one per `git.branch_pattern` and record it at the top of the effort's `map.md`.
 

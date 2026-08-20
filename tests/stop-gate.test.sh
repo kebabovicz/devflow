@@ -66,6 +66,43 @@ NOMAP="$SANDBOX/nomap"; mkdir -p "$NOMAP/.devflow"
 printf 'project:\n  name: x\n' > "$NOMAP/.devflow/project.yml"
 check 0 "$NOMAP" false "no map directory => gate inactive"
 
+# ── Parallel work: several efforts, several worktrees ───────────────────────
+# The failure this covers, seen in the field: a repo with seven efforts and
+# three worktrees blocked the WRONG session — a ticket in progress in effort A
+# plus uncommitted files belonging to effort B satisfied both conditions.
+PAR="$SANDBOX/parallel"
+mkdir -p "$PAR/.devflow/maps/alpha/tickets" "$PAR/.devflow/maps/beta/tickets"
+git -C "$PAR" init -q -b feature/alpha
+printf 'maps:\n  dir: .devflow/maps\n' > "$PAR/.devflow/project.yml"
+printf '.devflow/maps/\n' > "$PAR/.git/info/exclude"
+printf '# alpha\n\nBranch: `feature/alpha`\n' > "$PAR/.devflow/maps/alpha/map.md"
+printf '# beta\n\nBranch: `feature/beta`\n'   > "$PAR/.devflow/maps/beta/map.md"
+printf 'Status: done\n'        > "$PAR/.devflow/maps/alpha/tickets/01-a.md"
+printf 'Status: in progress\n' > "$PAR/.devflow/maps/beta/tickets/01-b.md"
+git -C "$PAR" add -A
+git -C "$PAR" -c user.email=t@t -c user.name=t commit -qm init
+printf 'let x = 1\n' > "$PAR/app.js"
+
+check 0 "$PAR" false "ticket in progress in another branch's effort does not block"
+
+printf 'Status: in progress\n' > "$PAR/.devflow/maps/alpha/tickets/01-a.md"
+check 2 "$PAR" false "ticket in progress in THIS branch's effort blocks"
+
+# A worktree checks out tracked files only, so the map exists solely in the main
+# tree. The gate must still find it — and must judge the worktree's own tree.
+WT="$SANDBOX/parallel-beta"
+git -C "$PAR" worktree add -q -b feature/beta-wt "$WT" 2>/dev/null
+if [ -d "$WT" ]; then
+  printf '# beta\n\nBranch: `feature/beta-wt`\n' > "$PAR/.devflow/maps/beta/map.md"
+  check 0 "$WT" false "worktree with a clean tree allows stop (map read from the main tree)"
+  printf 'let y = 2\n' > "$WT/wt.js"
+  check 2 "$WT" false "worktree: its own dirty tree + its branch's ticket blocks"
+  printf 'Status: done\n' > "$PAR/.devflow/maps/beta/tickets/01-b.md"
+  check 0 "$WT" false "worktree: nothing in progress for its branch => allowed"
+else
+  printf '  skip worktree cases (git worktree unavailable)\n'
+fi
+
 echo
 echo "stop-gate.test.sh: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

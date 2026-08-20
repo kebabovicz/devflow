@@ -178,6 +178,10 @@ claude-squad        # or your alias
 
 The same thing by hand (to understand what Squad automates): `git worktree add ../proj-task1 -b feature/X && cd ../proj-task1 && claude` per terminal — then you babysit, merge, and clean up worktrees yourself. With 2+ tasks that gets old fast; that's what Squad is for.
 
+**What devflow does across worktrees.** The decision map is per *repository*, not per checkout: it is git-excluded, so it physically lives in the main working tree, and every worktree session resolves it from there (`git rev-parse --git-common-dir`'s parent). One map, one set of ticket statuses, whichever directory you are in.
+
+The hooks follow the branch, not the repository. Record the effort's branch in its `map.md` — `build` does it automatically — and the stop gate will only hold a session whose *own* working tree is dirty while a ticket of *its own* branch's effort is in progress. Without that line the gate falls back to considering every effort, which is how a repo with several parallel tasks ends up blocking the wrong session. The session digest works the same way: the effort matching your branch is spelled out, the rest collapse into one counted line.
+
 ### Rules (otherwise parallelism = chaos)
 
 1. **Only tasks with non-overlapping blast radius run in parallel** (different services/modules). Two tasks in one service → sequential.

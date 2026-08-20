@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.38.0 — 2026-08-18
+
+- **The hooks stopped confusing two parallel tasks for one unfinished iteration.** Field report from a repo with seven efforts and three worktrees: the stop gate took the first ticket marked in progress *anywhere* in the map and any dirty file *anywhere* in the tree, and blocked a session that had touched neither. Both halves are now scoped: the gate only considers efforts whose `map.md` names the branch checked out here, and judges this working tree's own dirt. An effort that records no branch still falls back to the old behavior — losing the gate entirely is worse than an occasional wrong pointer.
+- **A git worktree now sees the map instead of nothing.** The map is deliberately git-excluded, so it exists only in the main working tree — a worktree checkout carries tracked files and no map at all, which left a worktree session with no tickets, no `design.md`, and nowhere to write a status. Hooks and skills now resolve the map root from the repository's common git directory, so every worktree of a repo shares one map and one set of ticket statuses.
+- **`build` records the effort's branch in `map.md`** — one line, and the thing the gate reads to tell whose uncommitted work it is looking at.
+- **The session digest stops printing a paragraph per open effort.** The effort matching the current branch is spelled out; the rest collapse into one counted line. With nothing claiming the branch and several efforts open, the whole thing is one line; a lone effort with no branch recorded is still shown in full, since collapsing it would hide the only thing there is. This closes a risk recorded when the map layer landed — at seven open efforts the digest was eating the top of every session.
+- Eleven new regression cases across the two hook suites, including real `git worktree` fixtures and a repo whose first commit has not landed yet (where `rev-parse HEAD` fails and branch detection has to fall back to `symbolic-ref`).
+
 ## 0.37.1 — 2026-08-18
 
 - **`sync-docs` no longer proposes a `contracts` document.** Its author mode offered a four-doc skeleton — architecture, environments, contracts, testing — and the contracts one restated the API surface: endpoints, DTOs, the CLI. That is the fastest-rotting document a project can own, invalidated by every route or field change and paid for forever by whoever forgets. The skeleton is now three docs, and the skill says where the surface actually lives: the code, and the schema in `services.<name>.schema`.
