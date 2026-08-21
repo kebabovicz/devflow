@@ -62,8 +62,12 @@ Present back what you understood: for a feature — current behavior (as found i
 
 ```
 Question 1. <the question, with as much context as it needs>?
-Proposed: <the answer you recommend, and in one sentence why>
+1. <option> — <what it buys, what it costs; when this is the right pick>.
+2. <option> — <what it buys, what it costs; when this is the right pick>.
+Proposed: 1 — <why it wins here, in one sentence>.
 ```
+
+One to three options, every one defensible, each naming when it would be the right choice — the visible fork is what separates a decision from a notification the user rubber-stamps. No honest alternative → usually not a question but an assumption for the ledger.
 
 Text holds nuance that a menu cannot: the user can accept half an option, name a condition, redraw the fork, or answer something you did not think to ask. That extra half-sentence is usually the load-bearing part of the answer — a picked label discards it silently.
 

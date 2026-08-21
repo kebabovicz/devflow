@@ -29,13 +29,18 @@ One shape, in the user's language:
 
 ```
 Question 1. <the question, with as much context as it needs>?
-Proposed: <the answer you recommend, and in one sentence why>
+1. <option> — <what it buys, what it costs; when this is the right pick>.
+2. <option> — <what it buys, what it costs; when this is the right pick>.
+Proposed: 1 — <why it wins here, in one sentence>.
 ```
 
+- **Show the fork, not just the winner.** A question with a single proposal reads as a notification: the user says "yes" because no alternative is visible, and cannot tell a strong recommendation from an unexamined one. The rejected options, each with its real price, are what lets them check the reasoning instead of trusting it.
+- **One to three options, all of them real.** Every option listed is one you would defend if the user picked it, and each names the condition under which it becomes the right choice ("pick 2 if a second consumer is planned"). An option you cannot defend is a strawman propping up the recommendation — leave it out.
+- **One option is legitimate when no honest alternative exists** — but ask yourself first whether that is still a question. A fork with one credible side is usually an assumption: state it in the ledger ("unless you say otherwise, I will X") instead of staging a vote on it.
 - **One question, one decision.** Each stands on its own — never "as in the previous question".
 - **Three or four per round, no more.** A question whose answer depends on another still-open question belongs to a later round.
-- **The recommendation is a real answer**, not a survey of everything possible. A question you cannot recommend an answer to is usually two questions.
-- Menus (`AskUserQuestion`) stay the exception: a genuinely closed fork whose whole answer fits in a short label. See `discuss/SKILL.md`.
+- **The proposal is a real answer**, not a survey. A question you cannot recommend an answer to is usually two questions.
+- Menus (`AskUserQuestion`) stay the exception: a genuinely closed fork whose whole answer fits in a short label with no qualification expected. See `discuss/SKILL.md`.
 
 ## Reports
 

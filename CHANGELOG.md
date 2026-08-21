@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.39.0 — 2026-08-22
+
+- **A question now shows the fork, not just the winner.** Field observation after a week of the `Question N / Proposed` format: the user agreed with nearly every proposal — and pointed out that this is indistinguishable from the agent deciding on its own and merely notifying. A single proposal gives the reader nothing to check the recommendation against; "yes" to it is trust, not a decision. The format in `OUTPUT-STYLE.md` (and `discuss`) now carries one to three options, each with what it buys, what it costs, and the condition under which it — not the recommended one — is the right pick, followed by the recommendation and why it wins here.
+- **Every listed option must be defensible.** An option the agent would not stand behind if the user picked it is a strawman propping up the recommendation, and it is banned by name. The condition attached to each option ("pick 2 if a second consumer is planned") is what makes the alternatives checkable rather than decorative.
+- **No honest alternative → it was never a question.** A fork with one credible side is an assumption wearing a question mark: it goes to the assumption ledger ("unless you say otherwise, I will X") instead of being staged as a vote with one candidate. This keeps the question rounds for the decisions that are actually open.
+
 ## 0.38.0 — 2026-08-18
 
 - **The hooks stopped confusing two parallel tasks for one unfinished iteration.** Field report from a repo with seven efforts and three worktrees: the stop gate took the first ticket marked in progress *anywhere* in the map and any dirty file *anywhere* in the tree, and blocked a session that had touched neither. Both halves are now scoped: the gate only considers efforts whose `map.md` names the branch checked out here, and judges this working tree's own dirt. An effort that records no branch still falls back to the old behavior — losing the gate entirely is worse than an occasional wrong pointer.
