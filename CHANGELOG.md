@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.40.0 — 2026-08-22
+
+- **New ticket status: `awaiting review` — implemented, uncommitted, waiting for the user's verdict.** The stop gate and the interactive task cycle were contradicting each other: `task` is required to present finished work and **ask before committing**, which means its normal end state is a ticket in progress plus a dirty tree — exactly what the gate reads as a died iteration. Worse, the gate's message ordered the agent to commit, pushing it to do the one thing the user was about to review. `/devflow:task` now sets `Status: awaiting review` at the moment it presents the work and the proposed commit message; the gate lets that state pass. The approved commit moves the ticket to `done`, a rejected one back to `in progress`.
+- **The unattended loop keeps its full protection.** `/devflow:build` never sets the new status and never takes a ticket carrying it — a ticket waiting on a human does not belong to an unattended loop — so for autonomous iterations the gate is exactly as strict as before.
+- **The gate's message now names both legitimate exits** instead of ordering a commit: hand the work to the user (`awaiting review`, never commit on your own initiative) or finish the unattended iteration (commit, tick, `done`).
+
 ## 0.39.0 — 2026-08-22
 
 - **A question now shows the fork, not just the winner.** Field observation after a week of the `Question N / Proposed` format: the user agreed with nearly every proposal — and pointed out that this is indistinguishable from the agent deciding on its own and merely notifying. A single proposal gives the reader nothing to check the recommendation against; "yes" to it is trust, not a decision. The format in `OUTPUT-STYLE.md` (and `discuss`) now carries one to three options, each with what it buys, what it costs, and the condition under which it — not the recommended one — is the right pick, followed by the recommendation and why it wins here.

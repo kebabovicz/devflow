@@ -10,7 +10,7 @@ Numbered from `01` in dependency order — blockers first.
 # NN — <ticket title>
 
 Blocked by: 02, 03        <!-- or: none — can start immediately -->
-Status: open | in progress | done
+Status: open | in progress | awaiting review | done
 Tracker: ABC-42           <!-- added only after an approved publish -->
 
 ## What it delivers
@@ -52,6 +52,10 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 **Finding the tickets it concerns is a graph walk, not a guess.** Take the current ticket's number, collect every ticket whose `Blocked by` names it, then every ticket whose `Blocked by` names one of those, and so on to the end of the chain. Those are the tickets downstream of this decision — the ones whose ground just moved. Matching by title or by topic misses exactly the case that matters, where the affected ticket is two steps away and named after something else.
 
 **An unanswered question makes the ticket un-takeable**: `/devflow:build` marks it `Status: blocked` and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
+
+## Statuses
+
+`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked.
 
 ## Vertical slices
 

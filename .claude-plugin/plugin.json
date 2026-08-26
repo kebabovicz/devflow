@@ -1,7 +1,7 @@
 {
   "name": "devflow",
   "description": "Development discipline for coding agents: decision maps that design the work before code, a task cycle and an unattended build loop over their tickets, two-check review, bug diagnosis, flow testing against live services, docs and tracker hygiene. Onboard any project with /devflow:init.",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "author": {
     "name": "kebabovicz"
   }

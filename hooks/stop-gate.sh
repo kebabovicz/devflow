@@ -97,5 +97,5 @@ EOF
 dirty=$(git -C "$cwd" status --porcelain 2>/dev/null) || exit 0
 [ -z "$dirty" ] && exit 0
 
-echo "devflow stop-gate: $(basename "$ticket") is in progress and the working tree is dirty — an iteration implemented work without committing it. Finish the iteration first: commit the ticket's files (message referencing the ticket), tick its acceptance checklist, set Status: done, then stop. A green test with a dirty tree is a failed iteration." >&2
+echo "devflow stop-gate: $(basename "$ticket") is in progress and the working tree is dirty — an iteration implemented work without committing it. Two legitimate exits: the work is finished and waiting for the user's own review → set Status: awaiting review in the ticket (never commit on your own initiative); or this is an unattended iteration → commit the ticket's files with a message referencing it, tick the checklist, set Status: done. A green test with a dirty tree and no one reviewing is a failed iteration." >&2
 exit 2

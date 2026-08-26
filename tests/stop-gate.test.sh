@@ -88,6 +88,12 @@ check 0 "$PAR" false "ticket in progress in another branch's effort does not blo
 printf 'Status: in progress\n' > "$PAR/.devflow/maps/alpha/tickets/01-a.md"
 check 2 "$PAR" false "ticket in progress in THIS branch's effort blocks"
 
+# The interactive hand-over: work implemented, user reviewing before commit.
+# task sets `awaiting review` when it presents the work — the gate must pass.
+printf 'Status: awaiting review\n' > "$PAR/.devflow/maps/alpha/tickets/01-a.md"
+check 0 "$PAR" false "awaiting review + dirty tree passes (user is reviewing, not a dead iteration)"
+printf 'Status: in progress\n' > "$PAR/.devflow/maps/alpha/tickets/01-a.md"
+
 # A worktree checks out tracked files only, so the map exists solely in the main
 # tree. The gate must still find it — and must judge the worktree's own tree.
 WT="$SANDBOX/parallel-beta"
