@@ -41,8 +41,25 @@ devflow — engine commands for devflow-managed repositories
       Refuses (code 3) when the ticket is not open, when its contract is not
       approved, when a blocker is not done, or when it carries an unanswered
       question. Refuses (code 4) when someone already holds it. The session
-      limit is not checked here: it belongs to `ticket start`, which dispatches
-      several at once.
+      limit is not checked here: taking a ticket costs nothing, running a
+      session costs memory, so the limit belongs to `session start`.
+
+  devflow session start <ref> [--name <name>] [--json]
+      Claim the ticket and start a session on it. Every gate `ticket take`
+      enforces applies first; on top of them the project's `sessions.limit` is
+      checked against the sessions already running here.
+
+      The session is started with `claude --bg`, named after the ticket, and
+      handed `/devflow:task <absolute path>`. With `sessions.worktree: true` in
+      the manifest it gets its own worktree. The engine keeps no process of its
+      own: `claude agents` lists the session, `claude attach <id>` opens it,
+      `claude logs <id>` prints its output and `claude stop <id>` ends it. The
+      id is written into the claim, which is what lets `status` say which
+      session is doing which ticket.
+
+      Refuses (code 3) when the limit is reached, and (code 2) when claude is
+      not on PATH or reports no session id — in that last case the claim it made
+      is given back.
 
   devflow contract draft <ref> [--delivers <md|->] [--acceptance <md|->] [--json]
       Write the ticket's contract — what it delivers and how anyone will know it
@@ -146,6 +163,11 @@ status_repo() {
     [ -n "$b" ] && branch_json=$(printf '%s' "$b" | jq -Rs 'rtrimstr("\n")')
   fi
 
+  # The session registry, fetched once per repository rather than once per
+  # ticket: a project with fifty tickets would otherwise shell out fifty times
+  # to learn the same answer.
+  DF_AGENTS=$(session_registry "$dir")
+
   local maps_json="[]"
   if [ "$engine" = true ]; then
     maps_root=$(df_maps_root "$dir")
@@ -167,6 +189,17 @@ status_repo() {
     --argjson engine "$engine" \
     --argjson branch "$branch_json" \
     --argjson maps "$maps_json" \
+    --argjson sessions "$(printf '%s' "$DF_AGENTS" | jq '[.[] | {
+        id: (.sessionId // "" | .[0:8]),
+        session_id: .sessionId,
+        name: .name,
+        kind: .kind,
+        status: .status,
+        pid: .pid,
+        cwd: .cwd,
+        started_at: (if .startedAt then (.startedAt / 1000 | todateiso8601) else null end),
+        live: (.pid != null)
+      }]')" \
     '{
        path: $path,
        name: $name,
@@ -178,7 +211,7 @@ status_repo() {
                      .[$k] = ((.[$k] // 0) + $c[$k])))),
        tickets_total: ($maps | map(.tickets | length) | add // 0),
        questions_open: ($maps | map(.questions_open) | add // 0),
-       sessions: []
+       sessions: $sessions
      }'
 }
 
@@ -252,16 +285,35 @@ status_ticket() {
 
   # Who holds the ticket, if anyone. This is what lets the tree show a session
   # against the work it is doing — the reason claims exist at all.
-  local lock lock_json=null
+  local lock lock_json=null session_json=null
   lock=$(df_lock_dir "$f")
   if [ -d "$lock" ]; then
-    local held since pid alive=false
+    local held since pid sid alive=false
     held=$(cat "$lock/owner" 2>/dev/null || echo unknown)
     since=$(cat "$lock/since" 2>/dev/null || echo unknown)
     pid=$(cat "$lock/pid" 2>/dev/null || echo "")
-    df_pid_alive "$pid" && alive=true
+    sid=$(cat "$lock/session" 2>/dev/null || echo "")
+
+    # A claim made by `session start` names the session that holds it, and the
+    # registry is the authority on whether that session still runs. The pid in
+    # the lock is the shell that ran the command, which exits immediately — for
+    # a dispatched ticket it would report every claim as stale within a second.
+    if [ -n "$sid" ]; then
+      session_json=$(printf '%s' "${DF_AGENTS:-[]}" | jq --arg s "$sid" 'map(select(
+          (.sessionId // "") | startswith($s))) | if length == 0 then null else {
+            id: $s, session_id: .[0].sessionId, name: .[0].name,
+            status: .[0].status, pid: .[0].pid, cwd: .[0].cwd,
+            live: (.[0].pid != null)
+          } end')
+      [ "$(printf '%s' "$session_json" | jq -r '.live // false')" = "true" ] && alive=true
+    else
+      df_pid_alive "$pid" && alive=true
+    fi
+
     lock_json=$(jq -n --arg o "$held" --arg s "$since" --argjson a "$alive" \
-      '{owner: $o, since: $s, holder_pid_alive: $a, stale: ($a | not)}')
+      --arg sid "$sid" \
+      '{owner: $o, since: $s, session: (if $sid == "" then null else $sid end),
+        holder_pid_alive: $a, stale: ($a | not)}')
   fi
 
   jq -n \
@@ -274,6 +326,7 @@ status_ticket() {
     --argjson acc_total "${acc_total:-0}" \
     --argjson acc_done "${acc_done:-0}" \
     --argjson lock "$lock_json" \
+    --argjson session "$session_json" \
     --arg c_state "$(df_contract_state "$f")" \
     --arg c_at "$(df_contract_meta "$f" at)" \
     --arg c_by "$(df_contract_meta "$f" by)" \
@@ -291,7 +344,7 @@ status_ticket() {
          by: (if $c_by == "" then null else $c_by end)
        },
        lock: $lock,
-       session: null
+       session: $session
      }'
 }
 
@@ -309,7 +362,9 @@ status_human() {
     (if .questions_open > 0 then " · вопросов: \(.questions_open)" else "" end) as $q |
     ([.maps[]?.tickets[]? | select(.contract.state == "draft")] | length) as $d |
     (if $d > 0 then " · контрактов на одобрение: \($d)" else "" end) as $c |
-    "\($n)  [\($b)]  \($t)\($q)\($c)"
+    ([.sessions[]? | select(.live)] | length) as $ls |
+    (if $ls > 0 then " · сессий: \($ls)" else "" end) as $s |
+    "\($n)  [\($b)]  \($t)\($q)\($c)\($s)"
   '
 }
 
@@ -332,8 +387,12 @@ ticket_result() { # $1=code $2=reason-slug $3=message $4=extra-json
 # substitution only ends the subshell it runs in — the caller would carry on
 # with the refusal JSON in a variable. Globals keep the refusal fatal.
 
-DF_MAPS=""    # maps directory for the current project
-DF_TICKET=""  # resolved ticket file
+DF_MAPS=""     # maps directory for the current project
+DF_TICKET=""   # resolved ticket file
+DF_REPO=""     # directory the command was run in
+DF_MANIFEST="" # its manifest
+DF_LOCK=""     # lock directory a successful claim holds
+DF_WAS=""      # status a ticket carried before the claim
 
 # Locate the maps directory for the current directory, or refuse.
 ticket_context() {
@@ -344,6 +403,8 @@ ticket_context() {
     ticket_result 2 not_onboarded \
       "devflow is not set up here — no .devflow/project.yml. Run /devflow:init first."
   fi
+  DF_REPO="$dir"
+  DF_MANIFEST="$manifest"
   DF_MAPS="$(df_maps_root "$dir")/$(df_maps_dir "$manifest")"
 }
 
@@ -389,6 +450,19 @@ cmd_ticket_take() {
   [ -n "$ref" ] || { printf 'devflow ticket take: which ticket?\n' >&2; return 1; }
   [ -n "$owner" ] || owner="$(hostname -s 2>/dev/null || echo host):$PPID"
 
+  ticket_take_core "$ref" "$owner"
+  local id; id=$(basename "$DF_TICKET" .md)
+  ticket_result 0 taken "$id taken by $owner" \
+    "$(jq -n --arg id "$id" --arg p "$DF_TICKET" --arg o "$owner" \
+       '{ticket: $id, path: $p, owner: $o, status: "in progress"}')"
+}
+
+# Every gate, then the claim. Refusals end the command from in here, which is
+# what a caller wants: `session start` must not spawn anything once a gate has
+# spoken. On return the claim is held, and DF_TICKET, DF_LOCK and DF_WAS say
+# what was claimed and what state it came from — enough to undo it.
+ticket_take_core() { # $1=ref $2=owner
+  local ref="$1" owner="$2"
   local maps file id
   ticket_context; maps="$DF_MAPS"
   ticket_resolve "$ref"; file="$DF_TICKET"
@@ -488,9 +562,19 @@ cmd_ticket_take() {
     ticket_result 2 write_failed "could not write $file — claim released"
   fi
 
-  ticket_result 0 taken "$id taken by $owner" \
-    "$(jq -n --arg id "$id" --arg p "$file" --arg o "$owner" \
-       '{ticket: $id, path: $p, owner: $o, status: "in progress"}')"
+  DF_LOCK="$lock"
+  DF_WAS="$raw"
+  return 0
+}
+
+# Give back a claim this command made. Used when a later step fails: the ticket
+# must not be left `in progress` with nobody working it — that is the legacy
+# state `take` refuses to claim over, and manufacturing it here would be a bug
+# that outlives the failed command.
+ticket_take_undo() {
+  [ -n "$DF_LOCK" ] && rm -rf "$DF_LOCK"
+  [ -n "$DF_TICKET" ] && [ -n "$DF_WAS" ] && df_set_header "$DF_TICKET" "Status" "$DF_WAS"
+  return 0
 }
 
 cmd_ticket_release() {
@@ -847,6 +931,117 @@ cmd_contract() {
   esac
 }
 
+# ── session ──────────────────────────────────────────────────────────────────
+#
+# The engine does not manage processes. `claude --bg` starts a session, names
+# it, and puts it in a registry that `claude agents --json` reads; `attach`,
+# `logs` and `stop` all work by the id it prints. Building a second registry
+# beside that one would only give the two a chance to disagree. What the engine
+# adds is the join: which session is doing which ticket, recorded in the claim.
+
+# The session registry, or an empty array when the CLI is not installed. A
+# missing `claude` is not an error here — `status` still has everything else to
+# report, and saying "no sessions" is better than refusing to answer at all.
+# $1=directory to filter by (optional)
+session_registry() {
+  command -v claude >/dev/null 2>&1 || { printf '[]'; return 0; }
+  local out
+  if [ -n "${1:-}" ]; then
+    out=$(claude agents --json --cwd "$1" 2>/dev/null) || out=""
+  else
+    out=$(claude agents --json 2>/dev/null) || out=""
+  fi
+  printf '%s' "$out" | jq -e 'type == "array"' >/dev/null 2>&1 || out='[]'
+  printf '%s' "$out"
+}
+
+# Sessions the registry lists as still running. Exited ones stay in it with a
+# null pid, and counting those against a limit would block work on the strength
+# of sessions that ended days ago.
+session_live_count() { # $1=directory
+  session_registry "$1" | jq '[.[] | select(.pid != null)] | length'
+}
+
+cmd_session_start() {
+  local ref="" name="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --name) name="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow session start: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow session start: which ticket?\n' >&2; return 1; }
+
+  command -v claude >/dev/null 2>&1 || {
+    ticket_result 2 no_cli "claude is not on PATH — the engine starts sessions with it"
+  }
+
+  ticket_context
+  local repo="$DF_REPO" manifest="$DF_MANIFEST" limit worktree
+  limit=$(df_yml_section_value "$manifest" sessions limit 2>/dev/null) || limit=""
+  worktree=$(df_yml_section_value "$manifest" sessions worktree 2>/dev/null) || worktree=""
+  case "$limit" in ''|*[!0-9]*) limit=0 ;; esac
+
+  # The limit is checked before the claim. Taking a ticket and immediately
+  # giving it back would show up in the tree as a flicker, and a refusal the
+  # user sees should leave nothing behind.
+  if [ "$limit" -gt 0 ]; then
+    local running; running=$(session_live_count "$repo")
+    if [ "${running:-0}" -ge "$limit" ]; then
+      ticket_result 3 session_limit \
+        "$running of $limit sessions already running here — stop one, or raise sessions.limit" \
+        "$(jq -n --argjson r "${running:-0}" --argjson l "$limit" '{running: $r, limit: $l}')"
+    fi
+  fi
+
+  local id; ticket_resolve "$ref"; id=$(basename "$DF_TICKET" .md)
+  [ -n "$name" ] || name="$id"
+
+  # The claim first: a session must not start work nobody holds, and every gate
+  # `take` enforces applies here unchanged.
+  ticket_take_core "$ref" "$name"
+  local file="$DF_TICKET" lock="$DF_LOCK"
+
+  # The ticket path must be absolute. With sessions.worktree the session starts
+  # in a worktree, which has no map at all — maps are excluded from version
+  # control and exist only in the main working tree.
+  local args=(--bg -n "$name") isolated=false
+  case "$worktree" in
+    true|yes|1) args+=(-w "$name"); isolated=true ;;
+  esac
+
+  local out sid
+  out=$(cd "$repo" && claude "${args[@]}" "/devflow:task $file" 2>&1)
+  sid=$(printf '%s' "$out" \
+        | sed -e 's/\x1b\[[0-9;]*m//g' \
+        | sed -nE 's/.*backgrounded · ([0-9a-f]{6,}).*/\1/p' | head -1)
+
+  if [ -z "$sid" ]; then
+    ticket_take_undo
+    ticket_result 2 spawn_failed \
+      "claude did not report a session id — the claim on $id was given back" \
+      "$(printf '%s' "$out" | jq -Rs '{output: .}')"
+  fi
+
+  printf '%s\n' "$sid" > "$lock/session"
+
+  ticket_result 0 started "$id is being worked by session $sid ($name)" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg s "$sid" --arg n "$name" \
+          --argjson w "$isolated" \
+       '{ticket: $id, path: $p, session: $s, name: $n, worktree: $w, status: "in progress"}')"
+}
+
+cmd_session() {
+  case "${1:-}" in
+    start) shift; cmd_session_start "$@" ;;
+    -h|--help|"") usage ;;
+    *) printf 'devflow session: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 cmd_question() {
   case "${1:-}" in
     add) shift; cmd_question_add "$@" ;;
@@ -877,6 +1072,7 @@ case "${1:-}" in
   status) shift; cmd_status "$@" ;;
   ticket) shift; cmd_ticket "$@" ;;
   contract) shift; cmd_contract "$@" ;;
+  session) shift; cmd_session "$@" ;;
   question) shift; cmd_question "$@" ;;
   help|-h|--help|"") usage ;;
   *) printf 'devflow: unknown command: %s\n\n' "$1" >&2; usage >&2; exit 1 ;;

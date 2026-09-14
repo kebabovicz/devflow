@@ -113,6 +113,18 @@ tracker:
   # Credentials NEVER live here (this file is committed). Auth via the Atlassian
   # MCP (OAuth) or JIRA_EMAIL / JIRA_API_TOKEN env vars for the REST fallback.
 
+sessions:
+  # How `devflow session start` dispatches work sessions for this project.
+  # A session is spawned with `claude --bg`, named after the ticket it takes, and
+  # listed by `claude agents` — the engine does not manage the process itself.
+  worktree: false            # true = every session gets its own worktree (claude -w).
+                             # Decision maps are never committed, so they live only in the
+                             # main working tree; an isolated session is handed the absolute
+                             # path to its ticket and still reads the one map.
+  limit: 0                   # most sessions to run at once in this project; 0 = no limit.
+                             # A session costs roughly 300 MB of RAM, which is what the
+                             # limit is really about.
+
 maps:
   # Decision maps (/devflow:map): an idea is carried to ready implementation
   # tickets through recon → requirements → concept → spec → detailed design →

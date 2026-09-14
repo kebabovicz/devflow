@@ -19,6 +19,26 @@ df_yml_value() {
           -e 's/[[:space:]]*$//'
 }
 
+# Read a scalar from inside one top-level section of a manifest. The flat reader
+# above takes the first line matching a key anywhere in the file, which is fine
+# for keys that appear once but wrong the moment two sections share a key name.
+# $1=file $2=section $3=key
+df_yml_section_value() {
+  [ -f "$1" ] || return 1
+  awk -v sect="$2" -v key="$3" '
+    /^[A-Za-z_][A-Za-z0-9_]*:/ { inside = ($1 == sect ":"); next }
+    inside && index($1, key ":") == 1 {
+      sub("^[[:space:]]*" key ":[[:space:]]*", "")
+      sub(/[[:space:]]*#.*$/, "")
+      sub(/[[:space:]]*$/, "")
+      gsub(/^"|"$/, "")
+      gsub(/^'"'"'|'"'"'$/, "")
+      print
+      exit
+    }
+  ' "$1"
+}
+
 # Root the maps live under. A git worktree checks out tracked files only and the
 # map is deliberately excluded from git, so it exists solely in the main working
 # tree. Resolving from the common git dir gives every worktree of a repo the
