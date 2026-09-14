@@ -33,8 +33,28 @@ consistency" on their own, and the reviewer must not read it as a slip.>
 ## Open questions
 
 <empty in a freshly cut ticket. Filled later, by whoever implements an
-EARLIER ticket and finds something that changes this one. One line each,
-naming where it came from and what it may change:
+EARLIER ticket and finds something that changes this one.
+
+Write entries with `devflow question add <ticket> --text -` rather than by
+hand: it blocks the ticket, records the status to restore, and numbers the
+entry. One block per question, its state on the heading:
+
+### Q1 · open · asked 2026-09-14T17:00:00Z · was: open
+
+**One bold sentence saying what is needed.** Then the options, numbered, each
+with what it costs. Then the proposal.
+
+### Q2 · answered 2026-09-14T18:10:00Z · asked 2026-09-14T17:30:00Z
+
+the question, as it was asked
+
+**Answer:**
+
+what was decided
+
+Settled entries stay — the trail of what was decided is why they are kept —
+and stop blocking the ticket. The older one-line form still reads as an open
+question, so tickets cut before this existed keep working:
 
 - from 02, while implementing: the session token is issued per device, so
   the user endpoints may need a device id in the path — decide before this

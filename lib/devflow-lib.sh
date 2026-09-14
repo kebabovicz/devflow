@@ -153,6 +153,83 @@ df_pid_alive() {
   kill -0 "$1" 2>/dev/null
 }
 
+# ── sections ────────────────────────────────────────────────────────────────
+
+# Body of a `## <name>` section, without the heading itself and without the
+# heading that ends it. Empty when the section is absent.
+# $1=file $2=section name
+df_section_body() {
+  [ -f "$1" ] || return 1
+  awk -v want="## $2" '
+    $0 == want { inside = 1; next }
+    inside && /^## / { inside = 0 }
+    inside { print }
+  ' "$1"
+}
+
+# Replace a section's body with the contents of a file, leaving every other byte
+# of the ticket alone. Creates the section at the end when it is absent — a
+# ticket cut before this format existed has no such heading, and refusing would
+# make the command useless on exactly the tickets that need it.
+# $1=file $2=section name $3=file holding the new body
+df_section_replace() {
+  local f="$1" name="$2" body="$3" tmp
+  [ -f "$f" ] || return 1
+  [ -f "$body" ] || return 1
+  tmp=$(mktemp "$(dirname "$f")/.df-XXXXXX") || return 1
+
+  if grep -qE "^## $name\$" "$f"; then
+    awk -v want="## $name" -v bodyfile="$body" '
+      $0 == want {
+        print; print "";
+        while ((getline line < bodyfile) > 0) print line;
+        close(bodyfile);
+        inside = 1; next
+      }
+      inside && /^## / { inside = 0 }
+      inside { next }
+      { print }
+    ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+  else
+    cat "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+    printf '\n## %s\n\n' "$name" >> "$tmp"
+    cat "$body" >> "$tmp" || { rm -f "$tmp"; return 1; }
+  fi
+
+  mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+  return 0
+}
+
+# How many questions on this ticket still wait on a person.
+#
+# Two forms count. `### Q<n> · open` is what `devflow question add` writes.
+# A plain bullet is the older form the format documented before questions had
+# commands — a line someone typed by hand. Both mean the same thing to a reader,
+# so both mean the same thing here; only the first form is ever written.
+# $1=ticket file
+df_questions_open() {
+  local body n_new n_old
+  body=$(df_section_body "$1" "Open questions" 2>/dev/null) || body=""
+  n_new=$(printf '%s\n' "$body" | grep -cE '^### Q[0-9]+ · open' || true)
+  # A bullet inside an answered block is part of that answer, not a question of
+  # its own: only count bullets when the new form is absent entirely.
+  n_old=0
+  if ! printf '%s\n' "$body" | grep -qE '^### Q[0-9]+'; then
+    n_old=$(printf '%s\n' "$body" | grep -cE '^[[:space:]]*[-*] ' || true)
+  fi
+  printf '%s' "$(( ${n_new:-0} + ${n_old:-0} ))"
+}
+
+# Next question number for a ticket: one past the highest already there, so
+# numbering survives dropped and answered entries.
+# $1=ticket file
+df_next_question_n() {
+  local body max
+  body=$(df_section_body "$1" "Open questions" 2>/dev/null) || body=""
+  max=$(printf '%s\n' "$body" | sed -nE 's/^### Q([0-9]+) .*/\1/p' | sort -n | tail -1)
+  printf '%s' "$(( ${max:-0} + 1 ))"
+}
+
 # Replace one header line in place, preserving the rest of the file byte for
 # byte. A ticket is a document a person reads and edits; rewriting it from
 # parsed fields would drop everything the parser does not know about. Writes a

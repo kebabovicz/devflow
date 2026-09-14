@@ -50,6 +50,19 @@ devflow — engine commands for devflow-managed repositories
       after a session died must not rewrite the second. Releasing a ticket that
       nobody holds succeeds and reports released: false.
 
+  devflow question add <ticket> --text <markdown|-> [--json]
+      Attach a question to a ticket and block it until someone answers. `-`
+      reads the body from stdin, so a multi-line question survives the shell.
+      The status the ticket had is recorded on the question and restored when
+      it is settled. Refuses (code 3) on a finished ticket: it waits on nobody.
+
+  devflow question answer <ticket> --text <markdown|-> [--question Q2] [--json]
+  devflow question drop <ticket> [--question Q2] [--json]
+      Settle a question — by answering it, or by taking it back. Without
+      --question the oldest open one is used. The body stays either way: the
+      trail of what was decided is why the entries are kept. The ticket leaves
+      `blocked` only when nothing else on it still waits on a person.
+
   devflow help
       This text.
 
@@ -395,14 +408,16 @@ cmd_ticket_take() {
       "$(printf '%s' "${unmet# }" | jq -Rs 'split(" ") | map(select(length>0)) | {blockers: .}')"
   fi
 
-  # An unanswered question under *Open questions* makes a ticket un-takeable —
-  # an earlier ticket left it there precisely so nobody would answer it here.
-  local questions
-  questions=$(sed -n '/^## Open questions/,/^## /p' "$file" 2>/dev/null \
-              | sed '1d;/^## /d' | grep -vE '^\s*$|^<!--' || true)
-  if [ -n "$questions" ]; then
+  # An unanswered question makes a ticket un-takeable — an earlier ticket left it
+  # there precisely so nobody would answer it here. Answered and dropped ones do
+  # not count: they are history, and a ticket whose questions were all settled is
+  # ready again.
+  local n_open
+  n_open=$(df_questions_open "$file")
+  if [ "${n_open:-0}" -gt 0 ]; then
     ticket_result 3 open_questions \
-      "$id carries an unanswered question — answer it in the map before taking the ticket"
+      "$id carries $n_open unanswered question(s) — answer with 'devflow question answer' before taking it" \
+      "$(jq -n --argjson n "${n_open:-0}" '{questions_open: $n}')"
   fi
 
   # ── the claim. mkdir either creates the directory or fails; there is no
@@ -457,6 +472,187 @@ cmd_ticket_release() {
     "$(jq -n --arg h "$held" '{released: true, was_held_by: $h}')"
 }
 
+# ── question ─────────────────────────────────────────────────────────────────
+#
+# A question belongs to a ticket. There is no such thing as a free-floating one:
+# the ticket is what the answer changes, and a question nobody can attach to
+# work is a note, not a decision waiting on a person.
+#
+# Asking blocks the ticket and records the status it had, so answering restores
+# that state rather than guessing. Answered and dropped questions stay in the
+# file — the trail of what was decided is the reason to keep them.
+
+# Read a body from --text: a literal string, or stdin when it is `-`.
+question_body() { # $1=raw --text value
+  if [ "$1" = "-" ]; then cat; else printf '%s' "$1"; fi
+}
+
+question_section() { # $1=ticket file  -> current body on stdout
+  df_section_body "$1" "Open questions" 2>/dev/null | sed -e '/./,$!d'
+}
+
+cmd_question_add() {
+  local ref="" text="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --text) text="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow question add: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow question add: which ticket?\n' >&2; return 1; }
+  [ -n "$text" ] || { printf 'devflow question add: --text is required\n' >&2; return 1; }
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local raw norm
+  raw=$(df_header "$file" "Status") || raw=""
+  norm=$(df_status_norm "$raw")
+  case "$norm" in
+    done|cancelled)
+      ticket_result 3 not_live \
+        "$id is '$raw' — a finished ticket does not wait on anyone" ;;
+  esac
+
+  local body n now tmp
+  body=$(question_body "$text")
+  [ -n "$body" ] || { printf 'devflow question add: the question is empty\n' >&2; return 1; }
+  n=$(df_next_question_n "$file")
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # The status recorded on the heading is what answering restores. Written
+  # before the status changes, or `blocked` would record itself.
+  tmp=$(mktemp) || return 1
+  question_section "$file" > "$tmp"
+  if [ -s "$tmp" ]; then printf '\n' >> "$tmp"; fi
+  printf '### Q%s · open · asked %s · was: %s\n\n' "$n" "$now" "$norm" >> "$tmp"
+  printf '%s\n' "$body" >> "$tmp"
+
+  if ! df_section_replace "$file" "Open questions" "$tmp"; then
+    rm -f "$tmp"
+    ticket_result 2 write_failed "could not write $file"
+  fi
+  rm -f "$tmp"
+
+  if [ "$norm" != "blocked" ]; then
+    df_set_header "$file" "Status" "blocked" || true
+  fi
+
+  ticket_result 0 asked "Q$n added to $id — ticket is blocked until it is answered" \
+    "$(jq -n --arg id "$id" --arg q "Q$n" --arg was "$norm" --arg p "$file" \
+       '{ticket: $id, question: $q, was: $was, path: $p, status: "blocked"}')"
+}
+
+# Close one question, by answering it or by dropping it. Both keep the body and
+# both restore the ticket's status when nothing else is left open — the only
+# difference is what the heading records and whether an answer is written.
+question_close() { # $1=mode(answer|drop) $2..=args
+  local mode="$1"; shift
+  local ref="" qref="" text="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --text) text="${2:-}"; shift 2 ;;
+      --question) qref="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow question %s: unknown option %s\n' "$mode" "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow question %s: which ticket?\n' "$mode" >&2; return 1; }
+  if [ "$mode" = answer ] && [ -z "$text" ]; then
+    printf 'devflow question answer: --text is required\n' >&2; return 1
+  fi
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local section target was
+  section=$(question_section "$file")
+  # Which question: the one named, else the oldest still open.
+  if [ -n "$qref" ]; then
+    target=$(printf '%s' "$qref" | sed -E 's/^[Qq]//')
+    printf '%s\n' "$section" | grep -qE "^### Q$target · open" || \
+      ticket_result 1 no_such_question "Q$target is not open on $id"
+  else
+    target=$(printf '%s\n' "$section" | sed -nE 's/^### Q([0-9]+) · open.*/\1/p' | head -1)
+    [ -n "$target" ] || ticket_result 3 nothing_open "$id has no open question"
+  fi
+  was=$(printf '%s\n' "$section" | sed -nE "s/^### Q$target · open.*was: (.*)\$/\1/p" | head -1)
+
+  local now tmp ansfile=""
+  now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  if [ "$mode" = answer ]; then
+    ansfile=$(mktemp) || return 1
+    question_body "$text" > "$ansfile"
+    [ -s "$ansfile" ] || { rm -f "$ansfile"; printf 'devflow question answer: the answer is empty\n' >&2; return 1; }
+  fi
+
+  # One pass: rewrite the heading's state, and for an answer append the body at
+  # the end of that question's block — before the next heading, or at the end of
+  # the section when it is the last one. The answer is read from a file so a
+  # multi-line markdown body survives intact.
+  tmp=$(mktemp) || { rm -f "$ansfile"; return 1; }
+  printf '%s\n' "$section" | awk -v q="$target" -v mode="$mode" -v now="$now" \
+      -v ansfile="$ansfile" '
+    function flush_answer() {
+      if (mode == "answer" && inside) {
+        print ""; print "**Answer:**";  print "";
+        while ((getline line < ansfile) > 0) print line;
+        close(ansfile);
+      }
+      inside = 0
+    }
+    $0 ~ ("^### Q" q " · open") {
+      asked = $0; sub(/^.*· asked /, "", asked); sub(/ ·.*$/, "", asked);
+      printf "### Q%s · %s %s · asked %s\n", q, (mode == "answer" ? "answered" : "dropped"), now, asked;
+      inside = 1; next
+    }
+    /^### Q/ { flush_answer(); print; next }
+    { print }
+    END { flush_answer() }
+  ' > "$tmp"
+  rm -f "$ansfile"
+
+  if ! df_section_replace "$file" "Open questions" "$tmp"; then
+    rm -f "$tmp"; ticket_result 2 write_failed "could not write $file"
+  fi
+  rm -f "$tmp"
+
+  # Restore only when nothing else waits on a person.
+  local still restored=null
+  still=$(df_questions_open "$file")
+  if [ "${still:-0}" -eq 0 ]; then
+    local back="$was"
+    if [ -z "$back" ] || [ "$back" = "blocked" ]; then back="open"; fi
+    df_set_header "$file" "Status" "$back" || true
+    restored=$(printf '%s' "$back" | jq -Rs 'rtrimstr("\n")')
+  fi
+
+  local verb=answered; [ "$mode" = drop ] && verb=dropped
+  ticket_result 0 "$verb" "Q$target on $id $verb" \
+    "$(jq -n --arg id "$id" --arg q "Q$target" --argjson still "${still:-0}" \
+            --argjson restored "$restored" \
+       '{ticket: $id, question: $q, still_open: $still, status: $restored}')"
+}
+
+cmd_question() {
+  case "${1:-}" in
+    add) shift; cmd_question_add "$@" ;;
+    answer) shift; question_close answer "$@" ;;
+    drop) shift; question_close drop "$@" ;;
+    -h|--help|"") usage ;;
+    *) printf 'devflow question: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 cmd_ticket() {
   case "${1:-}" in
     take) shift; cmd_ticket_take "$@" ;;
@@ -476,6 +672,7 @@ command -v jq >/dev/null 2>&1 || {
 case "${1:-}" in
   status) shift; cmd_status "$@" ;;
   ticket) shift; cmd_ticket "$@" ;;
+  question) shift; cmd_question "$@" ;;
   help|-h|--help|"") usage ;;
   *) printf 'devflow: unknown command: %s\n\n' "$1" >&2; usage >&2; exit 1 ;;
 esac
