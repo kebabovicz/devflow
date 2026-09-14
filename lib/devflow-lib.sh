@@ -97,3 +97,76 @@ df_title() {
   [ -f "$1" ] || return 1
   grep -m1 -E '^# ' "$1" 2>/dev/null | sed -e 's/^#[[:space:]]*//' -e 's/[[:space:]]*$//'
 }
+
+# ── ticket lookup and locking ───────────────────────────────────────────────
+
+# Every ticket file under a maps directory, one path per line.
+# $1=maps path
+df_ticket_files() {
+  local maps="$1" d f
+  [ -d "$maps" ] || return 0
+  for d in "$maps"/*/; do
+    [ -d "$d/tickets" ] || continue
+    for f in "$d/tickets"/*.md; do
+      [ -f "$f" ] && printf '%s\n' "$f"
+    done
+  done
+  return 0
+}
+
+# Resolve a ticket reference to a file path. Accepts a path to the file, the
+# basename without .md (`01-a`), or just the leading number (`01`). Prints every
+# candidate when several match: an ambiguous reference is for the caller to
+# refuse, never for this to pick from.
+# $1=maps path $2=reference
+df_find_ticket() {
+  local maps="$1" ref="$2" f base
+  if [ -f "$ref" ]; then printf '%s\n' "$ref"; return 0; fi
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    base=$(basename "$f" .md)
+    if [ "$base" = "$ref" ] || [ "${base%%-*}" = "$ref" ]; then
+      printf '%s\n' "$f"
+    fi
+  done < <(df_ticket_files "$maps")
+  return 0
+}
+
+# Lock directory for a ticket. Sits under the map root, beside the tickets —
+# that tree is already excluded from version control, and a lock is machine
+# state that must never be committed.
+# $1=ticket file
+df_lock_dir() {
+  local tdir; tdir=$(dirname "$1")          # .../<map>/tickets
+  printf '%s/.locks/%s' "$(dirname "$tdir")" "$(basename "$1" .md)"
+}
+
+# Is a recorded pid still running here? A hint, not proof. The process that
+# calls this CLI is a short-lived shell, not the session that owns the work, so
+# a dead pid does not prove the holder is gone and a live one does not prove it
+# is the same holder. The authoritative identity is the owner string the caller
+# passed with --owner.
+# $1=pid
+df_pid_alive() {
+  [ -n "${1:-}" ] || return 1
+  case "$1" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$1" 2>/dev/null
+}
+
+# Replace one header line in place, preserving the rest of the file byte for
+# byte. A ticket is a document a person reads and edits; rewriting it from
+# parsed fields would drop everything the parser does not know about. Writes a
+# sibling temp file and renames it — rename is atomic, so no reader ever sees a
+# half-written ticket.
+# $1=file $2=key $3=new value
+df_set_header() {
+  local f="$1" key="$2" val="$3" tmp
+  [ -f "$f" ] || return 1
+  tmp=$(mktemp "$(dirname "$f")/.df-XXXXXX") || return 1
+  awk -v k="$key" -v v="$val" '
+    !seen && index($0, k ":") == 1 { print k ": " v; seen = 1; next }
+    { print }
+  ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+  mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
+  return 0
+}

@@ -33,6 +33,23 @@ devflow — engine commands for devflow-managed repositories
       "engine": false. A path that is not a git repository is reported with
       "branch": null. Only an unreadable path returns a non-zero code.
 
+  devflow ticket take <ref> [--owner <name>] [--json]
+      Claim a ticket for this session and mark it in progress. The claim is
+      atomic: of several sessions asking at once, exactly one succeeds and the
+      rest are told who holds it.
+
+      Refuses (code 3) when the ticket is not open, when a blocker is not done,
+      or when it carries an unanswered question. Refuses (code 4) when someone
+      already holds it. Blockers are checked here because this is one session
+      picking up one ticket; contract approval and the session limit belong to
+      `ticket start`, which dispatches several.
+
+  devflow ticket release <ref> [--json]
+      Drop the claim. Does not touch Status: the lock says who is holding the
+      work, the status says what state the work is in, and releasing a claim
+      after a session died must not rewrite the second. Releasing a ticket that
+      nobody holds succeeds and reports released: false.
+
   devflow help
       This text.
 
@@ -204,6 +221,20 @@ status_ticket() {
     acc_done=$(printf '%s' "$section" | grep -cE '^[[:space:]]*- \[[xX]\]' || true)
   fi
 
+  # Who holds the ticket, if anyone. This is what lets the tree show a session
+  # against the work it is doing — the reason claims exist at all.
+  local lock lock_json=null
+  lock=$(df_lock_dir "$f")
+  if [ -d "$lock" ]; then
+    local held since pid alive=false
+    held=$(cat "$lock/owner" 2>/dev/null || echo unknown)
+    since=$(cat "$lock/since" 2>/dev/null || echo unknown)
+    pid=$(cat "$lock/pid" 2>/dev/null || echo "")
+    df_pid_alive "$pid" && alive=true
+    lock_json=$(jq -n --arg o "$held" --arg s "$since" --argjson a "$alive" \
+      '{owner: $o, since: $s, holder_pid_alive: $a, stale: ($a | not)}')
+  fi
+
   jq -n \
     --arg id "$id" \
     --arg path "$f" \
@@ -213,6 +244,7 @@ status_ticket() {
     --argjson blocked "$blocked_json" \
     --argjson acc_total "${acc_total:-0}" \
     --argjson acc_done "${acc_done:-0}" \
+    --argjson lock "$lock_json" \
     '{
        id: $id,
        path: $path,
@@ -221,6 +253,7 @@ status_ticket() {
        status_raw: (if $raw == "" then null else $raw end),
        blocked_by: $blocked,
        acceptance: {total: $acc_total, checked: $acc_done},
+       lock: $lock,
        session: null
      }'
 }
@@ -241,6 +274,198 @@ status_human() {
   '
 }
 
+# ── ticket ───────────────────────────────────────────────────────────────────
+
+# Emit a result object and exit. Every outcome — success, refusal, conflict —
+# leaves the same shape behind, so a consumer reads `ok` and `reason` instead of
+# matching on prose. `reason` is a stable slug; `message` is for a person.
+ticket_result() { # $1=code $2=reason-slug $3=message $4=extra-json
+  local code="$1" reason="$2" msg="$3" extra="${4:-}"
+  [ -n "$extra" ] || extra='{}'
+  jq -n --argjson code "$code" --arg reason "$reason" --arg message "$msg" \
+        --argjson extra "$extra" \
+    '{ok: ($code == 0), code: $code, reason: $reason, message: $message} + $extra'
+  exit "$code"
+}
+
+# The two resolvers below set a global instead of printing their answer. A
+# refusal has to end the whole command, and `exit` inside a command
+# substitution only ends the subshell it runs in — the caller would carry on
+# with the refusal JSON in a variable. Globals keep the refusal fatal.
+
+DF_MAPS=""    # maps directory for the current project
+DF_TICKET=""  # resolved ticket file
+
+# Locate the maps directory for the current directory, or refuse.
+ticket_context() {
+  local dir manifest
+  dir=$(pwd)
+  manifest="$dir/.devflow/project.yml"
+  if [ ! -f "$manifest" ]; then
+    ticket_result 2 not_onboarded \
+      "devflow is not set up here — no .devflow/project.yml. Run /devflow:init first."
+  fi
+  DF_MAPS="$(df_maps_root "$dir")/$(df_maps_dir "$manifest")"
+}
+
+# Resolve a reference to exactly one ticket, or refuse with what was found.
+ticket_resolve() { # $1=ref
+  local matches n
+  matches=$(df_find_ticket "$DF_MAPS" "$1")
+  n=$(printf '%s' "$matches" | grep -c . || true)
+  if [ "${n:-0}" -eq 0 ]; then
+    ticket_result 1 not_found "no ticket matches '$1'"
+  fi
+  if [ "${n:-0}" -gt 1 ]; then
+    ticket_result 1 ambiguous "'$1' matches $n tickets — name one exactly" \
+      "$(printf '%s' "$matches" | jq -Rs 'split("\n") | map(select(length>0)) | {candidates: .}')"
+  fi
+  DF_TICKET="$matches"
+}
+
+# Someone else holds it. Reports who, since when, and whether the pid recorded
+# in the lock is still alive — a hint that the holder died, never a verdict:
+# breaking the claim is `ticket release`, a decision for the caller.
+ticket_take_conflict() { # $1=ticket-id $2=lock dir
+  local held since alive=false
+  held=$(cat "$2/owner" 2>/dev/null || echo unknown)
+  since=$(cat "$2/since" 2>/dev/null || echo unknown)
+  df_pid_alive "$(cat "$2/pid" 2>/dev/null || true)" && alive=true
+  ticket_result 4 already_held "$1 is held by $held since $since" \
+    "$(jq -n --arg h "$held" --arg s "$since" --argjson a "$alive" \
+       '{holder: $h, since: $s, holder_pid_alive: $a, stale: ($a | not)}')"
+}
+
+cmd_ticket_take() {
+  local ref="" owner="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --owner) owner="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow ticket take: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow ticket take: which ticket?\n' >&2; return 1; }
+  [ -n "$owner" ] || owner="$(hostname -s 2>/dev/null || echo host):$PPID"
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  # ── held already? Checked first because a taken ticket is also `in progress`,
+  # and "someone holds it" is the more useful answer than "it is not open" —
+  # different code, different fix. This is a courtesy, not the guarantee: the
+  # lock could appear a microsecond from now, and the mkdir below is what
+  # actually decides the race.
+  local lock; lock=$(df_lock_dir "$file")
+  if [ -d "$lock" ]; then
+    ticket_take_conflict "$id" "$lock"
+  fi
+
+  # ── takeable? The three conditions the skills already state in prose.
+  local raw norm
+  raw=$(df_header "$file" "Status") || raw=""
+  norm=$(df_status_norm "$raw")
+  if [ "$norm" != "open" ]; then
+    # `in progress` with no lock is the legacy state: a skill set the status by
+    # hand before claims existed. Name it, rather than quietly claiming over it.
+    if [ "$norm" = "in progress" ] && [ ! -d "$(df_lock_dir "$file")" ]; then
+      ticket_result 3 in_progress_unlocked \
+        "$id is marked in progress but nobody holds a claim — a session set it by hand. Release is not needed; decide whether that work is still live."
+    fi
+    ticket_result 3 not_open "$id is '$raw', not open"
+  fi
+
+  local blocked blocker bfile bstatus unmet=""
+  blocked=$(df_header "$file" "Blocked by") || blocked=""
+  case "$(printf '%s' "$blocked" | tr '[:upper:]' '[:lower:]')" in ""|none) ;; *)
+    for blocker in $(printf '%s' "$blocked" | tr ',' ' '); do
+      bfile=$(df_find_ticket "$(dirname "$(dirname "$file")")" "$blocker" | head -1)
+      [ -n "$bfile" ] || bfile=$(df_find_ticket "$maps" "$blocker" | head -1)
+      if [ -z "$bfile" ]; then unmet="$unmet $blocker(unknown)"; continue; fi
+      bstatus=$(df_status_norm "$(df_header "$bfile" "Status")")
+      [ "$bstatus" = "done" ] || unmet="$unmet $blocker($bstatus)"
+    done ;;
+  esac
+  if [ -n "$unmet" ]; then
+    ticket_result 3 blocked_by "$id is blocked by:${unmet}" \
+      "$(printf '%s' "${unmet# }" | jq -Rs 'split(" ") | map(select(length>0)) | {blockers: .}')"
+  fi
+
+  # An unanswered question under *Open questions* makes a ticket un-takeable —
+  # an earlier ticket left it there precisely so nobody would answer it here.
+  local questions
+  questions=$(sed -n '/^## Open questions/,/^## /p' "$file" 2>/dev/null \
+              | sed '1d;/^## /d' | grep -vE '^\s*$|^<!--' || true)
+  if [ -n "$questions" ]; then
+    ticket_result 3 open_questions \
+      "$id carries an unanswered question — answer it in the map before taking the ticket"
+  fi
+
+  # ── the claim. mkdir either creates the directory or fails; there is no
+  # window between checking and creating, which is the whole point. Two sessions
+  # reaching this line together both call mkdir; the kernel picks one.
+  mkdir -p "$(dirname "$lock")" 2>/dev/null
+  if ! mkdir "$lock" 2>/dev/null; then
+    ticket_take_conflict "$id" "$lock"
+  fi
+
+  printf '%s\n' "$owner" > "$lock/owner"
+  date -u +%Y-%m-%dT%H:%M:%SZ > "$lock/since"
+  printf '%s\n' "$PPID" > "$lock/pid"
+
+  # Status second: the claim is what makes this exclusive, the status is what
+  # the stop gate and the loop read. A claim without the status would be a
+  # half-take, so undo it rather than leave one behind.
+  if ! df_set_header "$file" "Status" "in progress"; then
+    rm -rf "$lock"
+    ticket_result 2 write_failed "could not write $file — claim released"
+  fi
+
+  ticket_result 0 taken "$id taken by $owner" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg o "$owner" \
+       '{ticket: $id, path: $p, owner: $o, status: "in progress"}')"
+}
+
+cmd_ticket_release() {
+  local ref="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow ticket release: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow ticket release: which ticket?\n' >&2; return 1; }
+
+  local maps file id lock
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+  lock=$(df_lock_dir "$file")
+
+  if [ ! -d "$lock" ]; then
+    ticket_result 0 not_held "$id is not held by anyone" '{"released": false}'
+  fi
+  local held; held=$(cat "$lock/owner" 2>/dev/null || echo unknown)
+  rm -rf "$lock"
+  ticket_result 0 released "claim on $id released (was $held)" \
+    "$(jq -n --arg h "$held" '{released: true, was_held_by: $h}')"
+}
+
+cmd_ticket() {
+  case "${1:-}" in
+    take) shift; cmd_ticket_take "$@" ;;
+    release) shift; cmd_ticket_release "$@" ;;
+    -h|--help|"") usage ;;
+    *) printf 'devflow ticket: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 # ── dispatch ─────────────────────────────────────────────────────────────────
 
 command -v jq >/dev/null 2>&1 || {
@@ -250,6 +475,7 @@ command -v jq >/dev/null 2>&1 || {
 
 case "${1:-}" in
   status) shift; cmd_status "$@" ;;
+  ticket) shift; cmd_ticket "$@" ;;
   help|-h|--help|"") usage ;;
   *) printf 'devflow: unknown command: %s\n\n' "$1" >&2; usage >&2; exit 1 ;;
 esac
