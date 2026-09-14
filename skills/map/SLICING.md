@@ -10,7 +10,7 @@ Numbered from `01` in dependency order — blockers first.
 # NN — <ticket title>
 
 Blocked by: 02, 03        <!-- or: none — can start immediately -->
-Status: open | in progress | awaiting review | done
+Status: open | in progress | awaiting review | done | blocked
 Tracker: ABC-42           <!-- added only after an approved publish -->
 
 ## What it delivers
@@ -55,7 +55,9 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 
 ## Statuses
 
-`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked.
+`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked. `blocked` — an unanswered question or a gap in the design stopped it; the loop set this and moved on.
+
+**Write the canonical value, accept its synonyms when reading.** Tickets in the wild carry `todo` for `open` and `awaiting` for `awaiting review` — a ticket written before this list settled, or by hand. Anything reading a ticket treats those as the same state; anything writing one writes the canonical word above. A status outside this list is shown as-is and never silently reinterpreted: an unknown word is a ticket to look at, not a ticket to skip.
 
 ## Vertical slices
 
