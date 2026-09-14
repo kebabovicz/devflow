@@ -1,0 +1,255 @@
+#!/bin/bash
+# devflow — the engine's command line.
+#
+# Every subcommand answers with a return code first and machine-readable output
+# second: a consumer reads the code and the JSON, never the prose. Free-text
+# parsing is how a UI and an engine drift apart.
+#
+# Return codes (fixed across every subcommand):
+#   0  done
+#   1  bad invocation — unknown subcommand, missing or unreadable path
+#   2  environment not ready — no manifest where one is required
+#   3  condition not met — a gate refused (blocked ticket, missing approval)
+#   4  state conflict — someone else holds what was asked for
+#
+# Requires: bash, jq, git.
+
+set -u
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/devflow-lib.sh
+. "$SELF_DIR/../lib/devflow-lib.sh"
+
+usage() {
+  cat <<'USAGE'
+devflow — engine commands for devflow-managed repositories
+
+  devflow status [--json] [path ...]
+      Report the state of each path: whether devflow is set up there, the
+      branch checked out, its maps, tickets by status, and open questions.
+      Reads only — no file is written. Defaults to the current directory.
+
+      A path without .devflow is not an error: it is reported with
+      "engine": false. A path that is not a git repository is reported with
+      "branch": null. Only an unreadable path returns a non-zero code.
+
+  devflow help
+      This text.
+
+Return codes: 0 done · 1 bad invocation · 2 environment not ready ·
+3 condition not met · 4 state conflict.
+USAGE
+}
+
+# ── status ───────────────────────────────────────────────────────────────────
+#
+# The shape below is the API the pult reads. Keys are never omitted: an unknown
+# value is null, so a consumer can tell "not applicable" from "not collected".
+# "schema" is bumped whenever a key changes meaning.
+
+cmd_status() {
+  local json=0 paths=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow status: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) paths+=("$1"); shift ;;
+    esac
+  done
+  [ "${#paths[@]}" -eq 0 ] && paths=(".")
+
+  local repos_json="[]" p abs
+  for p in "${paths[@]}"; do
+    if [ ! -d "$p" ]; then
+      printf 'devflow status: no such directory: %s\n' "$p" >&2
+      return 1
+    fi
+    abs=$(cd "$p" 2>/dev/null && pwd) || {
+      printf 'devflow status: cannot read: %s\n' "$p" >&2
+      return 1
+    }
+    repos_json=$(printf '%s' "$repos_json" \
+      | jq --argjson r "$(status_repo "$abs")" '. + [$r]')
+  done
+
+  local out
+  out=$(jq -n --argjson repos "$repos_json" \
+    '{schema: 1, generated_at: (now | todateiso8601), repos: $repos}')
+
+  if [ "$json" -eq 1 ]; then
+    printf '%s\n' "$out"
+  else
+    status_human "$out"
+  fi
+  return 0
+}
+
+# One repository, as JSON. Never fails: an absent engine, an absent git repo and
+# an empty map are all states worth reporting, not errors.
+status_repo() {
+  local dir="$1" manifest maps_root maps_dir maps_path
+  local engine=false branch_json=null name
+
+  name=$(basename "$dir")
+  manifest="$dir/.devflow/project.yml"
+  [ -f "$manifest" ] && engine=true
+
+  if df_is_git "$dir"; then
+    local b; b=$(df_branch "$dir")
+    [ -n "$b" ] && branch_json=$(printf '%s' "$b" | jq -Rs 'rtrimstr("\n")')
+  fi
+
+  local maps_json="[]"
+  if [ "$engine" = true ]; then
+    maps_root=$(df_maps_root "$dir")
+    maps_dir=$(df_maps_dir "$manifest")
+    maps_path="$maps_root/$maps_dir"
+    if [ -d "$maps_path" ]; then
+      local d
+      for d in "$maps_path"/*/; do
+        [ -d "$d" ] || continue
+        maps_json=$(printf '%s' "$maps_json" \
+          | jq --argjson m "$(status_map "$d")" '. + [$m]')
+      done
+    fi
+  fi
+
+  jq -n \
+    --arg path "$dir" \
+    --arg name "$name" \
+    --argjson engine "$engine" \
+    --argjson branch "$branch_json" \
+    --argjson maps "$maps_json" \
+    '{
+       path: $path,
+       name: $name,
+       engine: $engine,
+       branch: $branch,
+       maps: $maps,
+       counts: ($maps | map(.counts) | reduce .[] as $c ({}; . as $acc
+                 | reduce ($c | keys_unsorted[]) as $k ($acc;
+                     .[$k] = ((.[$k] // 0) + $c[$k])))),
+       tickets_total: ($maps | map(.tickets | length) | add // 0),
+       questions_open: ($maps | map(.questions_open) | add // 0),
+       sessions: []
+     }'
+}
+
+# One map directory. A map with no tickets is a real state — charting stops at
+# decisions sometimes — so it is reported with an empty list, not skipped.
+status_map() {
+  local d="${1%/}" slug
+  slug=$(basename "$d")
+
+  local tickets_json="[]" f
+  if [ -d "$d/tickets" ]; then
+    for f in "$d/tickets"/*.md; do
+      [ -f "$f" ] || continue
+      tickets_json=$(printf '%s' "$tickets_json" \
+        | jq --argjson t "$(status_ticket "$f")" '. + [$t]')
+    done
+  fi
+
+  # Questions are decision tickets under issues/: `Status: open | claimed |
+  # resolved`. Open and claimed both still wait on a human.
+  local q_open=0
+  if [ -d "$d/issues" ]; then
+    for f in "$d/issues"/*.md; do
+      [ -f "$f" ] || continue
+      local s; s=$(df_header "$f" "Status") || s=""
+      case "$s" in open|claimed) q_open=$((q_open + 1)) ;; esac
+    done
+  fi
+
+  jq -n \
+    --arg slug "$slug" \
+    --arg path "$d" \
+    --argjson tickets "$tickets_json" \
+    --argjson q "$q_open" \
+    '{
+       slug: $slug,
+       path: $path,
+       tickets: $tickets,
+       questions_open: $q,
+       counts: ($tickets | group_by(.status)
+                 | map({key: .[0].status, value: length}) | from_entries)
+     }'
+}
+
+# One ticket file. `status_raw` is what the file says; `status` is the
+# normalized bucket. Both are reported because the two have drifted and a
+# consumer needs to show one while counting the other.
+status_ticket() {
+  local f="$1" id raw blocked title
+  id=$(basename "$f" .md)
+  raw=$(df_header "$f" "Status") || raw=""
+  blocked=$(df_header "$f" "Blocked by") || blocked=""
+  title=$(df_title "$f") || title=""
+
+  local blocked_json="[]"
+  case "$(printf '%s' "$blocked" | tr '[:upper:]' '[:lower:]')" in
+    ""|none) ;;
+    *) blocked_json=$(printf '%s' "$blocked" \
+         | jq -Rs 'split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))') ;;
+  esac
+
+  # Acceptance criteria are a checklist under `## Acceptance`; ticked boxes are
+  # what the implementer claims, never what a verification run confirmed.
+  local acc_total=0 acc_done=0
+  if grep -qE '^## Acceptance' "$f" 2>/dev/null; then
+    local section
+    section=$(sed -n '/^## Acceptance/,/^## /p' "$f" 2>/dev/null)
+    acc_total=$(printf '%s' "$section" | grep -cE '^[[:space:]]*- \[.\]' || true)
+    acc_done=$(printf '%s' "$section" | grep -cE '^[[:space:]]*- \[[xX]\]' || true)
+  fi
+
+  jq -n \
+    --arg id "$id" \
+    --arg path "$f" \
+    --arg title "$title" \
+    --arg raw "$raw" \
+    --arg norm "$(df_status_norm "$raw")" \
+    --argjson blocked "$blocked_json" \
+    --argjson acc_total "${acc_total:-0}" \
+    --argjson acc_done "${acc_done:-0}" \
+    '{
+       id: $id,
+       path: $path,
+       title: (if $title == "" then null else $title end),
+       status: (if $norm == "" then null else $norm end),
+       status_raw: (if $raw == "" then null else $raw end),
+       blocked_by: $blocked,
+       acceptance: {total: $acc_total, checked: $acc_done},
+       session: null
+     }'
+}
+
+# Human view. One line per repository, same facts as the JSON — a person
+# checking the engine should not have to read JSON to do it.
+status_human() {
+  printf '%s' "$1" | jq -r '
+    .repos[] |
+    (.name) as $n |
+    (if .engine then
+       ((.counts | to_entries | map("\(.key)=\(.value)") | join(" "))
+        | if . == "" then "тикетов нет" else . end)
+     else "движок не заведён" end) as $t |
+    (.branch // "не git-репозиторий") as $b |
+    (if .questions_open > 0 then " · вопросов: \(.questions_open)" else "" end) as $q |
+    "\($n)  [\($b)]  \($t)\($q)"
+  '
+}
+
+# ── dispatch ─────────────────────────────────────────────────────────────────
+
+command -v jq >/dev/null 2>&1 || {
+  printf 'devflow: jq is required\n' >&2
+  exit 2
+}
+
+case "${1:-}" in
+  status) shift; cmd_status "$@" ;;
+  help|-h|--help|"") usage ;;
+  *) printf 'devflow: unknown command: %s\n\n' "$1" >&2; usage >&2; exit 1 ;;
+esac
