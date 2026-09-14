@@ -8,6 +8,8 @@ description: Pick up a task and drive it through the devflow cycle — from a lo
 
 Read `.devflow/project.yml` → `tracker`, `maps`. No manifest → stop: the project isn't onboarded, point to `/devflow:init`.
 
+The engine CLI, written `devflow` below, is `bin/devflow` in the plugin root — the directory `${CLAUDE_SKILL_DIR}/../..` points at. It is not on PATH; invoke it by that path.
+
 ## Resolve the task source
 
 - **A path to a ticket file** (typically `<maps.dir>/<effort>/tickets/NN-slug.md`) → read it, and read the sibling `design.md` and `spec.md` for the sections it names. **An unanswered question under the ticket's *Open questions* means it is not ready**: put it to the user before starting — an earlier ticket left it there precisely so it would not be answered silently here. This is the primary path: the thinking is already done and recorded, so **do not re-plan it**. Check `Blocked by` — every ticket listed there must be `done` before this one starts; if not, say which one blocks and stop. **Check the contract**: the ticket must say what it delivers and carry acceptance criteria, and `Contract:` must not be a `draft` — a draft is waiting on the user, so put it to them and wait. If the ticket says neither, write one with `devflow contract draft <ticket> --delivers - --acceptance -` and ask the user to approve it; never approve your own. Set `Status: in progress` before touching code: it is what the stop gate reads to tell an unfinished iteration from an ordinary session, and what tells the next session where a dead one stopped.

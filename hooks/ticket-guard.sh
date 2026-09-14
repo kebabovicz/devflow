@@ -37,7 +37,11 @@ SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
 input=$(cat) || exit 0
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)
 [ -n "$cwd" ] || exit 0
-file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+# NotebookEdit names its target `notebook_path`, every other edit tool uses
+# `file_path`. Reading both means the matcher and the parsing agree; reading one
+# would let notebooks through a gate that claims to cover them.
+file=$(printf '%s' "$input" \
+       | jq -r '.tool_input.file_path // .tool_input.notebook_path // empty' 2>/dev/null)
 [ -n "$file" ] || exit 0
 
 manifest="$cwd/.devflow/project.yml"
@@ -69,14 +73,35 @@ esac
 branch=$(df_branch "$cwd")
 [ -n "$branch" ] || exit 0
 
-# Efforts whose map names this branch. Unlike the stop gate, a branch no map
-# claims does NOT widen to every effort: this hook refuses an action rather
-# than nudging at the end of one, and a refusal earned by the wrong map is how
-# a gate teaches people to switch it off.
+# Never on the base branch. Under devflow's own rules work does not happen
+# there — guard.sh already blocks committing on it — so an edit on the base
+# branch is a hotfix, a rebase fixup or a look around, none of which a ticket
+# gate should stand in front of. It is also where the loose match below would
+# do the most damage: maps name the base branch constantly ("branched off
+# develop"), and every one of those mentions would arm the gate.
+base=$(df_yml_section_value "$manifest" git base_branch 2>/dev/null) || base=""
+[ -n "$base" ] && [ "$branch" = "$base" ] && exit 0
+
+# Efforts whose map names this branch, in backticks — the form a map writes a
+# branch in ("Ветка работы — `feature/AIZHOL-493`"). A bare substring is not
+# enough: a map that happens to contain the English word "main" would arm the
+# gate for the main branch, and a gate that refuses on a coincidence is a gate
+# people switch off. A map that names its branch without backticks leaves the
+# gate silent, which is the fail-open direction every hook here takes.
+#
+# Residual, and deliberate: a map naming ANOTHER branch as the one it was cut
+# from arms the gate for that branch too. Narrowing further would mean parsing
+# the prose around the name. The cost is bounded — the gate only speaks when
+# that map also has live tickets and none of them is in progress.
+#
+# Unlike the stop gate, a branch no map claims does NOT widen to every effort:
+# this hook refuses an action rather than nudging at the end of one.
+branch_re=$(printf '%s' "$branch" | sed -e 's/[][\.^$*+?(){}|\\]/\\&/g')
 efforts=""
 for mapfile in "$maps_path"/*/map.md; do
   [ -f "$mapfile" ] || continue
-  grep -qF -- "$branch" "$mapfile" 2>/dev/null && efforts="$efforts$(dirname "$mapfile")
+  grep -qE -- "\`$branch_re\`" "$mapfile" 2>/dev/null \
+    && efforts="$efforts$(dirname "$mapfile")
 "
 done
 [ -n "$efforts" ] || exit 0
@@ -101,5 +126,9 @@ EOF
 [ -n "$live" ] || exit 0
 [ -n "$in_progress" ] && exit 0
 
-echo "devflow ticket guard: no ticket is in progress for $branch, so this change belongs to nothing. Take one first — 'devflow ticket take <id>', or 'devflow session start <id>' to work it in its own session. Ready here: ${live% }. If this edit genuinely belongs to no ticket, start the session with DEVFLOW_ALLOW=1 in its environment." >&2
+# The CLI ships with the plugin and is not on PATH, so the message names the
+# path that actually works from here rather than a command that may not resolve.
+CLI="$SELF_DIR/../bin/devflow"
+
+echo "devflow ticket guard: no ticket is in progress for $branch, so this change belongs to nothing. Take one first — '$CLI ticket take <id>', or '$CLI session start <id>' to work it in its own session. Ready here: ${live% }. If this edit genuinely belongs to no ticket, start the session with DEVFLOW_ALLOW=1 in its environment." >&2
 exit 2

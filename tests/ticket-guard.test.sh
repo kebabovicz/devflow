@@ -26,8 +26,13 @@ setup() { # $1=branch named in map.md
   git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init 2>/dev/null
   printf 'maps:\n  dir: .devflow/maps\n' > "$REPO/.devflow/project.yml"
   printf '# alpha\n\nВетка работы — `%s`.\n' "${1:-work}" > "$E/map.md"
+  # (the backtick form is what a map writes, and what the gate reads)
   mkdir -p "$REPO/src"
   printf 'code\n' > "$REPO/src/app.ts"
+}
+
+switch() { # $1=branch to check out in the sandbox
+  git -C "$REPO" checkout -q -B "$1" 2>/dev/null
 }
 
 mk() { # $1=name $2=status
@@ -108,6 +113,41 @@ ck "outside a devflow project it says nothing" 0 "$REPO/src/app.ts"
 setup work
 mk 01-ready open
 ck "a file outside the project is not its business" 0 "$SANDBOX/elsewhere.ts"
+
+echo "── the branch is matched as a written name, not as a substring"
+setup work
+mk 01-ready open
+printf '# alpha\n\nThe main working tree holds the map.\n' > "$E/map.md"
+switch main
+ck "prose that merely contains the word does not claim the branch" 0 "$REPO/src/app.ts"
+
+setup work
+mk 01-ready open
+printf '# alpha\n\nРаботаем в ветке work, без кавычек.\n' > "$E/map.md"
+ck "a map that does not write its branch in backticks leaves the gate silent" 0 "$REPO/src/app.ts"
+
+setup feature/AIZHOL-431
+mk 01-ready open
+switch feature/AIZHOL-43
+ck "a shorter branch does not claim a longer one's map" 0 "$REPO/src/app.ts"
+switch feature/AIZHOL-431
+ck "the branch the map names does claim it" 2 "$REPO/src/app.ts"
+
+echo "── never on the base branch"
+setup develop
+mk 01-ready open
+printf 'git:\n  base_branch: develop\n\nmaps:\n  dir: .devflow/maps\n' > "$REPO/.devflow/project.yml"
+switch develop
+ck "work does not happen on the base branch, so nothing is gated there" 0 "$REPO/src/app.ts"
+
+echo "── notebooks are covered by the field they actually use"
+setup work
+mk 01-ready open
+g=$(jq -n --arg cwd "$REPO" --arg f "$REPO/src/nb.ipynb" \
+      '{tool_name: "NotebookEdit", cwd: $cwd, tool_input: {notebook_path: $f}}' \
+    | bash "$HOOK" >/dev/null 2>&1; printf '%s' "$?")
+if [ "$g" = "2" ]; then PASS=$((PASS+1)); printf '  ok   a notebook edit is gated like any other\n'
+else FAIL=$((FAIL+1)); printf '  FAIL a notebook edit is gated like any other (got %s)\n' "$g"; fi
 
 echo "── the bypass"
 setup work
