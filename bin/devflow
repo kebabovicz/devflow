@@ -38,11 +38,27 @@ devflow — engine commands for devflow-managed repositories
       atomic: of several sessions asking at once, exactly one succeeds and the
       rest are told who holds it.
 
-      Refuses (code 3) when the ticket is not open, when a blocker is not done,
-      or when it carries an unanswered question. Refuses (code 4) when someone
-      already holds it. Blockers are checked here because this is one session
-      picking up one ticket; contract approval and the session limit belong to
-      `ticket start`, which dispatches several.
+      Refuses (code 3) when the ticket is not open, when its contract is not
+      approved, when a blocker is not done, or when it carries an unanswered
+      question. Refuses (code 4) when someone already holds it. The session
+      limit is not checked here: it belongs to `ticket start`, which dispatches
+      several at once.
+
+  devflow contract draft <ref> [--delivers <md|->] [--acceptance <md|->] [--json]
+      Write the ticket's contract — what it delivers and how anyone will know it
+      is done — and mark it a draft awaiting a person. Either flag reads stdin
+      with `-`; only one of them may. With neither, the sections already in the
+      ticket are checked and marked as they stand.
+
+      Refuses (code 3) when the result would say nothing about delivery or carry
+      no acceptance criterion: a contract with no way to tell it is fulfilled is
+      not a contract. Drafting over an approved contract returns it to draft —
+      editing what was agreed withdraws the agreement.
+
+  devflow contract approve <ref> [--by <name>] [--json]
+      Approve a drafted contract, recording when and by whom. This is the user's
+      act: a session may draft a contract and propose it, never approve its own.
+      Refuses (code 3) when there is no contract to approve.
 
   devflow ticket release <ref> [--json]
       Drop the claim. Does not touch Status: the lock says who is holding the
@@ -258,6 +274,9 @@ status_ticket() {
     --argjson acc_total "${acc_total:-0}" \
     --argjson acc_done "${acc_done:-0}" \
     --argjson lock "$lock_json" \
+    --arg c_state "$(df_contract_state "$f")" \
+    --arg c_at "$(df_contract_meta "$f" at)" \
+    --arg c_by "$(df_contract_meta "$f" by)" \
     '{
        id: $id,
        path: $path,
@@ -266,6 +285,11 @@ status_ticket() {
        status_raw: (if $raw == "" then null else $raw end),
        blocked_by: $blocked,
        acceptance: {total: $acc_total, checked: $acc_done},
+       contract: {
+         state: $c_state,
+         at: (if $c_at == "" then null else $c_at end),
+         by: (if $c_by == "" then null else $c_by end)
+       },
        lock: $lock,
        session: null
      }'
@@ -283,7 +307,9 @@ status_human() {
      else "движок не заведён" end) as $t |
     (.branch // "не git-репозиторий") as $b |
     (if .questions_open > 0 then " · вопросов: \(.questions_open)" else "" end) as $q |
-    "\($n)  [\($b)]  \($t)\($q)"
+    ([.maps[]?.tickets[]? | select(.contract.state == "draft")] | length) as $d |
+    (if $d > 0 then " · контрактов на одобрение: \($d)" else "" end) as $c |
+    "\($n)  [\($b)]  \($t)\($q)\($c)"
   '
 }
 
@@ -391,6 +417,28 @@ cmd_ticket_take() {
     fi
     ticket_result 3 not_open "$id is '$raw', not open"
   fi
+
+  # ── agreed? Work does not start on a ticket nobody signed off. The check sits
+  # after the status gate on purpose: for a `done` ticket "it is not open" is the
+  # more useful answer than "its contract is a draft". A ticket cut before
+  # contracts had a name passes — it was reviewed when it was sliced, and
+  # refusing every existing ticket would make this gate a migration, not a rule.
+  local contract; contract=$(df_contract_state "$file")
+  case "$contract" in
+    approved|legacy) ;;
+    draft)
+      ticket_result 3 contract_unapproved \
+        "the contract for $id is a draft — a person approves it with 'devflow contract approve $id' before work starts" \
+        "$(jq -n '{contract: "draft"}')" ;;
+    none)
+      ticket_result 3 contract_unapproved \
+        "$id has no contract — it does not say what it delivers or how anyone would know it is done. Draft one with 'devflow contract draft $id'" \
+        "$(jq -n '{contract: "none"}')" ;;
+    *)
+      ticket_result 3 contract_unapproved \
+        "the contract for $id reads '$contract', which is not an approval" \
+        "$(jq -n --arg c "$contract" '{contract: $c}')" ;;
+  esac
 
   local blocked blocker bfile bstatus unmet=""
   blocked=$(df_header "$file" "Blocked by") || blocked=""
@@ -643,6 +691,162 @@ question_close() { # $1=mode(answer|drop) $2..=args
        '{ticket: $id, question: $q, still_open: $still, status: $restored}')"
 }
 
+# ── contract ─────────────────────────────────────────────────────────────────
+#
+# The contract is not a new document. A ticket already states what it delivers
+# and what has to be true for it to be done; that pair *is* the contract, and a
+# `## Contract` section beside them would only say the same thing twice. What
+# was missing is the state: whether a person has looked at those two sections
+# and agreed that finishing them finishes the work.
+
+# Read a flag body: `-` takes stdin, so a multi-line markdown block survives the
+# shell. Only one flag per call may read stdin — the second would get nothing
+# and silently write an empty section.
+contract_body() { # $1=raw flag value
+  if [ "$1" = "-" ]; then cat; else printf '%s' "$1"; fi
+}
+
+cmd_contract_draft() {
+  local ref="" delivers="" acceptance="" has_d=0 has_a=0 json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --delivers) delivers="${2:-}"; has_d=1; shift 2 ;;
+      --acceptance) acceptance="${2:-}"; has_a=1; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow contract draft: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow contract draft: which ticket?\n' >&2; return 1; }
+  if [ "$delivers" = "-" ] && [ "$acceptance" = "-" ]; then
+    printf 'devflow contract draft: only one of --delivers and --acceptance can read stdin\n' >&2
+    return 1
+  fi
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local raw norm was
+  raw=$(df_header "$file" "Status") || raw=""
+  norm=$(df_status_norm "$raw")
+  case "$norm" in
+    done|cancelled)
+      ticket_result 3 not_live \
+        "$id is '$raw' — a finished ticket is past the point of agreeing what it delivers" ;;
+  esac
+  was=$(df_contract_state "$file")
+
+  # Validate before writing. The alternative — write, then check what came out —
+  # leaves a half-written contract behind on every refusal.
+  local d_body="" a_body=""
+  [ "$has_d" -eq 1 ] && d_body=$(contract_body "$delivers")
+  [ "$has_a" -eq 1 ] && a_body=$(contract_body "$acceptance")
+
+  local will_deliver will_accept
+  if [ "$has_d" -eq 1 ]; then
+    will_deliver=$(printf '%s' "$d_body" | tr -d '[:space:]')
+  else
+    will_deliver=$(df_section_body "$file" "What it delivers" 2>/dev/null | tr -d '[:space:]')
+  fi
+  if [ -z "$will_deliver" ]; then
+    ticket_result 3 contract_incomplete \
+      "$id does not say what it delivers — pass --delivers or fill '## What it delivers'"
+  fi
+
+  if [ "$has_a" -eq 1 ]; then
+    will_accept=$(printf '%s\n' "$a_body" | grep -cE '^[[:space:]]*- \[.\]') || will_accept=0
+  else
+    will_accept=$(df_section_body "$file" "Acceptance" 2>/dev/null \
+                  | grep -cE '^[[:space:]]*- \[.\]') || will_accept=0
+  fi
+  if [ "${will_accept:-0}" -eq 0 ]; then
+    ticket_result 3 contract_incomplete \
+      "$id carries no acceptance criterion — a contract nobody can check is not a contract. Criteria are a checklist: '- [ ] <mechanically checkable>'"
+  fi
+
+  local tmp
+  if [ "$has_d" -eq 1 ]; then
+    tmp=$(mktemp) || return 1
+    printf '%s\n' "$d_body" > "$tmp"
+    if ! df_section_replace "$file" "What it delivers" "$tmp"; then
+      rm -f "$tmp"; ticket_result 2 write_failed "could not write $file"
+    fi
+    rm -f "$tmp"
+  fi
+  if [ "$has_a" -eq 1 ]; then
+    tmp=$(mktemp) || return 1
+    printf '%s\n' "$a_body" > "$tmp"
+    if ! df_section_replace "$file" "Acceptance" "$tmp"; then
+      rm -f "$tmp"; ticket_result 2 write_failed "could not write $file"
+    fi
+    rm -f "$tmp"
+  fi
+
+  if ! df_set_header "$file" "Contract" "draft"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+
+  local note=""
+  [ "$was" = "approved" ] && note=" — the earlier approval is withdrawn, the contract changed"
+  ticket_result 0 drafted "contract for $id is a draft awaiting approval$note" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg was "$was" \
+       '{ticket: $id, path: $p, contract: "draft", was: $was}')"
+}
+
+cmd_contract_approve() {
+  local ref="" by="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --by) by="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow contract approve: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow contract approve: which ticket?\n' >&2; return 1; }
+  [ -n "$by" ] || by="$(hostname -s 2>/dev/null || echo host):$(id -un 2>/dev/null || echo user)"
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local state; state=$(df_contract_state "$file")
+  if [ "$state" = "none" ]; then
+    ticket_result 3 no_contract \
+      "$id has no contract to approve — draft one with 'devflow contract draft $id'"
+  fi
+  if [ "$state" = "approved" ]; then
+    ticket_result 0 already_approved "contract for $id was already approved" \
+      "$(jq -n --arg id "$id" --arg p "$file" \
+            --arg at "$(df_contract_meta "$file" at)" \
+            --arg by "$(df_contract_meta "$file" by)" \
+         '{ticket: $id, path: $p, contract: "approved", at: $at, by: $by}')"
+  fi
+
+  local now; now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  if ! df_set_header "$file" "Contract" "approved $now by $by"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+
+  ticket_result 0 approved "contract for $id approved by $by — it can be taken into work" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg at "$now" --arg by "$by" --arg was "$state" \
+       '{ticket: $id, path: $p, contract: "approved", at: $at, by: $by, was: $was}')"
+}
+
+cmd_contract() {
+  case "${1:-}" in
+    draft) shift; cmd_contract_draft "$@" ;;
+    approve) shift; cmd_contract_approve "$@" ;;
+    -h|--help|"") usage ;;
+    *) printf 'devflow contract: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
+  esac
+}
+
 cmd_question() {
   case "${1:-}" in
     add) shift; cmd_question_add "$@" ;;
@@ -672,6 +876,7 @@ command -v jq >/dev/null 2>&1 || {
 case "${1:-}" in
   status) shift; cmd_status "$@" ;;
   ticket) shift; cmd_ticket "$@" ;;
+  contract) shift; cmd_contract "$@" ;;
   question) shift; cmd_question "$@" ;;
   help|-h|--help|"") usage ;;
   *) printf 'devflow: unknown command: %s\n\n' "$1" >&2; usage >&2; exit 1 ;;

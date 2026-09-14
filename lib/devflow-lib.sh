@@ -106,6 +106,7 @@ df_ticket_files() {
   local maps="$1" d f
   [ -d "$maps" ] || return 0
   for d in "$maps"/*/; do
+    d="${d%/}"
     [ -d "$d/tickets" ] || continue
     for f in "$d/tickets"/*.md; do
       [ -f "$f" ] && printf '%s\n' "$f"
@@ -182,11 +183,13 @@ df_section_replace() {
     awk -v want="## $name" -v bodyfile="$body" '
       $0 == want {
         print; print "";
-        while ((getline line < bodyfile) > 0) print line;
+        while ((getline line < bodyfile) > 0) { print line; last = line }
         close(bodyfile);
         inside = 1; next
       }
-      inside && /^## / { inside = 0 }
+      # A blank line before the next heading — the format the ticket was written
+      # in, and the one a reader expects back.
+      inside && /^## / { if (last != "") print ""; inside = 0 }
       inside { next }
       { print }
     ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
@@ -235,15 +238,75 @@ df_next_question_n() {
 # parsed fields would drop everything the parser does not know about. Writes a
 # sibling temp file and renames it — rename is atomic, so no reader ever sees a
 # half-written ticket.
+#
+# A key the file does not carry yet is inserted after `Status:`, which is where
+# the format puts the header block. Without that, setting a header the ticket
+# never had would silently do nothing — and every ticket cut before a header
+# existed is exactly the ticket that needs it set.
 # $1=file $2=key $3=new value
 df_set_header() {
   local f="$1" key="$2" val="$3" tmp
   [ -f "$f" ] || return 1
   tmp=$(mktemp "$(dirname "$f")/.df-XXXXXX") || return 1
-  awk -v k="$key" -v v="$val" '
-    !seen && index($0, k ":") == 1 { print k ": " v; seen = 1; next }
-    { print }
-  ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+  if grep -qE "^$key:" "$f" 2>/dev/null; then
+    awk -v k="$key" -v v="$val" '
+      !placed && index($0, k ":") == 1 { print k ": " v; placed = 1; next }
+      { print }
+    ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+  else
+    awk -v k="$key" -v v="$val" '
+      { print }
+      !placed && index($0, "Status:") == 1 { print k ": " v; placed = 1 }
+      END { if (!placed) print k ": " v }
+    ' "$f" > "$tmp" || { rm -f "$tmp"; return 1; }
+  fi
   mv "$tmp" "$f" || { rm -f "$tmp"; return 1; }
   return 0
+}
+
+# ── contracts ───────────────────────────────────────────────────────────────
+
+# Does this ticket say what it delivers and how anyone would know it is done?
+# That pair is the contract — the ticket format already carries both sections,
+# so a contract is a state of the ticket rather than a document beside it.
+# $1=ticket file
+df_contract_complete() {
+  local delivers items
+  delivers=$(df_section_body "$1" "What it delivers" 2>/dev/null | tr -d '[:space:]')
+  [ -n "$delivers" ] || return 1
+  items=$(df_section_body "$1" "Acceptance" 2>/dev/null \
+          | grep -cE '^[[:space:]]*- \[.\]') || items=0
+  [ "${items:-0}" -gt 0 ]
+}
+
+# Contract state of a ticket: approved | draft | legacy | none.
+#
+# `legacy` is a ticket with no `Contract:` header whose two sections are both
+# filled — every ticket cut before this header existed. It is reported as its
+# own value rather than folded into `approved`: those tickets were reviewed when
+# they were sliced, so they stay takeable, but a reader can still tell the
+# difference between "a person approved this" and "this predates the question".
+# $1=ticket file
+df_contract_state() {
+  local v first
+  if ! grep -qE '^Contract:' "$1" 2>/dev/null; then
+    if df_contract_complete "$1"; then printf 'legacy'; else printf 'none'; fi
+    return
+  fi
+  v=$(df_header "$1" "Contract") || v=""
+  first="${v%% *}"
+  if [ -z "$first" ]; then printf 'none'; else printf '%s' "$first"; fi
+}
+
+# When a contract was approved and by whom. The whole record lives on the one
+# header line — `Contract: approved <iso> by <who>` — so a grep for the state
+# and a read for the provenance never disagree.
+# $1=ticket file $2=at|by  ->  the field, or empty when absent
+df_contract_meta() {
+  local v
+  v=$(df_header "$1" "Contract" 2>/dev/null) || v=""
+  case "$2" in
+    at) printf '%s' "$(printf '%s' "$v" | awk '{print $2}')" ;;
+    by) printf '%s' "$(printf '%s' "$v" | sed -nE 's/.* by (.+)$/\1/p')" ;;
+  esac
 }

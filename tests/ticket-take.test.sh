@@ -36,6 +36,10 @@ setup() { # rebuilt before each group so one test never leaks into the next
 Blocked by: none
 Status: open
 
+## What it delivers
+
+the payload endpoint
+
 ## Acceptance
 
 - [ ] criterion

@@ -34,6 +34,10 @@ setup() {
 Blocked by: none
 Status: open
 
+## What it delivers
+
+the token store
+
 ## Acceptance
 
 - [ ] criterion

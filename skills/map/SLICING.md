@@ -11,6 +11,7 @@ Numbered from `01` in dependency order — blockers first.
 
 Blocked by: 02, 03        <!-- or: none — can start immediately -->
 Status: open | in progress | awaiting review | done | blocked
+Contract: draft           <!-- approved by a person before work starts -->
 Tracker: ABC-42           <!-- added only after an approved publish -->
 
 ## What it delivers
@@ -72,6 +73,16 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 **Finding the tickets it concerns is a graph walk, not a guess.** Take the current ticket's number, collect every ticket whose `Blocked by` names it, then every ticket whose `Blocked by` names one of those, and so on to the end of the chain. Those are the tickets downstream of this decision — the ones whose ground just moved. Matching by title or by topic misses exactly the case that matters, where the affected ticket is two steps away and named after something else.
 
 **An unanswered question makes the ticket un-takeable**: `/devflow:build` marks it `Status: blocked` and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
+
+## The contract
+
+*What it delivers* and *Acceptance* together are the ticket's contract: what will be true when this is finished, and how anyone tells. They are not a separate document — the ticket already carries both. The `Contract:` header says only whether a person has agreed to what they say.
+
+`draft` — written, waiting on the user. `approved <iso> by <who>` — agreed, and the ticket can be taken. A ticket that fills neither section has no contract at all, and `devflow ticket take` refuses it: nobody could say when it was done.
+
+**Approving is the user's act.** A session drafts and proposes — `devflow contract draft <ticket> --delivers - --acceptance -` — then stops. It never runs `devflow contract approve` for itself. Editing an approved contract returns it to `draft`, because what was agreed is no longer what the ticket says.
+
+Tickets cut before this header existed carry no `Contract:` line. Both their sections are filled and the slicing they came from was reviewed, so they stay takeable; anything reading them sees the state `legacy`, which is the truth — reviewed once, but not by this gate.
 
 ## Statuses
 
