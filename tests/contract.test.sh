@@ -197,6 +197,14 @@ setup
 ck "there is nothing to approve on a bare ticket" no_contract '.reason' contract approve 03-bare
 ck_rc "refusal is code 3" 3 contract approve 03-bare
 
+echo "── the human line says a contract is waiting"
+setup
+got=$(run status 2>/dev/null | head -1)
+case "$got" in
+  *"контрактов на одобрение: 1"*) PASS=$((PASS+1)); printf '  ok   a draft is reported to a person, not only in JSON\n' ;;
+  *) FAIL=$((FAIL+1)); printf '  FAIL a draft is reported to a person (got %s)\n' "$got" ;;
+esac
+
 echo "── the ticket is edited, not rewritten"
 setup
 cp "$T/01-legacy.md" "$SANDBOX/before.md"
