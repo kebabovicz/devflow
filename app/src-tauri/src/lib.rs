@@ -1,4 +1,5 @@
 mod engine;
+mod groups;
 mod pty;
 
 use std::sync::Arc;
@@ -7,6 +8,7 @@ use std::sync::Arc;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(Arc::new(pty::Panes::default()))
         .setup(|app| {
             // Translucency is a platform effect, not a CSS one: the window has
@@ -31,6 +33,10 @@ pub fn run() {
             engine::engine_status,
             engine::claude_agents,
             engine::discover_repos,
+            groups::groups_load,
+            groups::groups_save,
+            groups::group_repos,
+            groups::read_text,
             pty::pane_open,
             pty::pane_write,
             pty::pane_send_line,

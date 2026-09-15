@@ -52,21 +52,11 @@ html, body, #root {
 
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
 
-.folder {
-  flex: 1;
-  background: var(--raise);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  font: inherit;
-  padding: 4px 8px;
-  -webkit-app-region: no-drag;
-}
-.folder:focus { outline: none; border-color: var(--accent); }
-
+.spacer { flex: 1; }
 .generated { color: var(--faint); }
 
 .error {
+  cursor: default;
   padding: 6px 12px;
   background: rgba(120, 30, 30, 0.55);
   border-bottom: 1px solid var(--line);
@@ -206,3 +196,152 @@ html, body, #root {
   background: rgba(255, 255, 255, 0.14);
   border-radius: 4px;
 }
+
+
+/* ── the tree ─────────────────────────────────────────────────────────────── */
+
+.group h2 .count {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.group h2 .twisty {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--dim);
+  cursor: pointer;
+}
+.group h2 .twisty:hover { color: var(--ink); }
+
+.group h2 .tiny {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  color: var(--faint);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.group h2 .tiny:hover { color: var(--ink); background: var(--raise); }
+
+/* A repository heads its own block: name and the branch it stands on. */
+.repo {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px 2px;
+  color: var(--ink);
+}
+.repo .where { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.effort { cursor: pointer; }
+.effort:hover { color: var(--dim); }
+
+.row.ticket, .row.waiting { cursor: pointer; }
+.row.ticket:hover, .row.waiting:hover { background: var(--raise); }
+.row.ticket.on { background: var(--raise); border-left-color: var(--accent); }
+
+.add {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 10px 12px 0;
+  padding: 5px;
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  color: var(--faint);
+  font: inherit;
+  cursor: pointer;
+}
+.add:hover { color: var(--ink); border-color: var(--dim); }
+
+/* ── reading a file ───────────────────────────────────────────────────────── */
+
+.doc-head {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px 0;
+}
+.views {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.views button {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.views button:hover { color: var(--ink); }
+.views button.on { background: var(--raise); color: var(--ink); }
+
+.doc {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 28px 32px;
+}
+
+.doc.rendered {
+  font: 13px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 78ch;
+}
+.doc.rendered h1 { font-size: 22px; margin: 18px 0 10px; }
+.doc.rendered h2 { font-size: 17px; margin: 22px 0 8px; }
+.doc.rendered h3 { font-size: 14px; margin: 18px 0 6px; color: var(--dim); }
+.doc.rendered p, .doc.rendered li { color: var(--ink); }
+.doc.rendered a { color: var(--accent); }
+.doc.rendered code {
+  font: 12px/1.5 var(--font);
+  background: var(--raise);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.doc.rendered pre {
+  background: rgba(0, 0, 0, 0.30);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.doc.rendered pre code { background: none; padding: 0; }
+.doc.rendered blockquote {
+  margin: 12px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+}
+.doc.rendered table { border-collapse: collapse; }
+.doc.rendered th, .doc.rendered td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  text-align: left;
+}
+.doc.rendered hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+.doc.rendered input[type="checkbox"] { margin-right: 6px; }
+
+.doc.raw { font: 12px/1.55 var(--font); padding-left: 10px; }
+.doc.raw table { border-collapse: collapse; width: 100%; }
+.doc.raw .ln {
+  width: 1%;
+  padding-right: 14px;
+  text-align: right;
+  color: var(--faint);
+  user-select: none;
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.doc.raw .src { white-space: pre-wrap; word-break: break-word; }
