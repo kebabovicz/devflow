@@ -69,13 +69,6 @@ html, body, #root {
 
 .body { display: flex; flex: 1; min-height: 0; }
 
-.tree {
-  width: 340px;
-  flex: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-bottom: 24px;
-}
 
 
 
@@ -269,66 +262,8 @@ html, body, #root {
 .body { position: relative; }
 
 
-/* ── the footer: what the sessions cost, and what is left ─────────────────── */
-
-.load {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 7px 14px;
-  border-top: 1px solid var(--line);
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
-}
-.load .active { color: var(--dim); }
-.load .metric b { color: var(--ink); font-weight: 400; margin-left: 2px; }
-.load .metric.dim { opacity: 0.7; }
-
-/* A limit is a number over a bar: the bar is read at a glance, the number when
-   the glance was not enough. */
-.load .limit {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-top: 5px;
-}
-.load .limit b { color: var(--ink); font-weight: 400; }
-.load .limit .resets { opacity: 0.7; }
-.load .limit .bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--line);
-  border-radius: 1px;
-  overflow: hidden;
-}
-.load .limit .bar > span {
-  display: block;
-  height: 100%;
-  background: var(--dim);
-  border-radius: 1px;
-}
-/* Severity comes from the account, not from a threshold invented here. */
-.load .limit.warning .bar > span { background: var(--warn); }
-.load .limit.warning b { color: var(--warn); }
-.load .limit.critical .bar > span { background: #ff8b8b; }
-.load .limit.critical b { color: #ff8b8b; }
-
-
 /* ── the tree, to the design's own metrics ───────────────────────────────── */
 
-.tree { background: #0f1116; padding: 6px 0; }
-
-.node {
-  display: flex;
-  align-items: center;
-  height: 30px;
-  padding-right: 8px;
-  cursor: default;
-}
 .node.leaf { height: 42px; }
 .node:hover { background: rgba(255, 255, 255, 0.04); }
 .node.on { background: rgba(255, 255, 255, 0.08); }
@@ -431,16 +366,6 @@ html, body, #root {
 
 /* ── the header strip ─────────────────────────────────────────────────────── */
 
-.bar .tool {
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--dim);
-  font: inherit;
-  padding: 2px 8px;
-  cursor: pointer;
-}
-.bar .tool:hover { color: var(--ink); border-color: var(--dim); }
 
 /* ── the context menu the design puts group work in ───────────────────────── */
 
@@ -469,3 +394,118 @@ html, body, #root {
 }
 .menu button:hover { background: rgba(255, 255, 255, 0.08); }
 .menu button.danger { color: #e0776b; }
+
+
+/* ── the left column ──────────────────────────────────────────────────────── */
+
+.aside {
+  width: 340px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0f1116;
+}
+
+.tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+}
+
+/* The column's own head: what it holds, and what can be done to it. */
+.aside-head { flex: none; }
+.aside-head .title {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 8px 0 12px;
+}
+.aside-head .caption {
+  flex: 1;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #b6b8c0;
+}
+.aside-head .actions { display: flex; gap: 2px; }
+.aside-head .actions button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.aside-head .actions button:hover { color: var(--ink); background: var(--raise); }
+.aside-head svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.aside-head .filter { padding: 0 12px 10px; }
+.aside-head .field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--faint);
+}
+.aside-head .field:focus-within { border-color: var(--accent); }
+.aside-head .field input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font: 12px/1 var(--font);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.aside-head .field input::placeholder { color: var(--faint); }
+.aside-head .field kbd { font: 10px/1 var(--font); color: var(--faint); }
+
+/* ── the column's foot: what the sessions cost, and what is left ──────────── */
+
+.aside-foot { flex: none; border-top: 1px solid var(--line); }
+
+.aside-foot .resources {
+  display: flex;
+  align-items: center;
+  height: 35px;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.aside-foot .resources .left { flex: 1; display: flex; align-items: center; gap: 7px; }
+.aside-foot .resources svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.aside-foot .resources .right { display: flex; gap: 12px; }
+.aside-foot .pair { display: flex; align-items: baseline; gap: 5px; }
+.aside-foot .pair em { font-style: normal; font-size: 10px; color: var(--faint); }
+.aside-foot .pair b { font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.aside-foot .limits { padding: 9px 12px 11px; display: flex; flex-direction: column; gap: 9px; }
+.aside-foot .none { font-size: 10.5px; color: var(--faint); }
+
+/* A limit reads in one line and is checked on the bar under it. */
+.aside-foot .limit { display: flex; flex-direction: column; gap: 4px; }
+.aside-foot .limit .line { display: flex; align-items: center; gap: 8px; font-size: 10.5px; }
+.aside-foot .limit .left { flex: 1; display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.aside-foot .limit em { font-style: normal; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aside-foot .limit b { font-weight: 400; color: var(--faint); font-variant-numeric: tabular-nums; }
+.aside-foot .limit .resets { font-size: 10px; color: var(--faint); flex: none; }
+.aside-foot .limit .bar { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.aside-foot .limit .bar > span { display: block; height: 100%; background: var(--faint); }
+
+/* Severity is the account's word, not a threshold invented here. */
+.aside-foot .limit.warning b { color: #ffd479; }
+.aside-foot .limit.warning .bar > span { background: #ffd479; }
+.aside-foot .limit.critical b { color: #e0776b; }
+.aside-foot .limit.critical .bar > span { background: #e0776b; }

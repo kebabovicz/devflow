@@ -27,6 +27,7 @@ import {
 import { TerminalPane } from "./Terminal";
 import { DocumentPane } from "./Document";
 import { TreeRow, type Row } from "./Tree";
+import { AsideFoot, AsideHead } from "./Aside";
 import "./App.css";
 
 const POLL_MS = 2500;
@@ -40,21 +41,6 @@ function sessionsUnder(all: Session[], repo: string): Session[] {
   return all.filter((s) => s.cwd === repo || s.cwd.startsWith(repo + "/"));
 }
 
-function shortReset(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const days = Math.round((d.getTime() - Date.now()) / 86400000);
-  return days >= 1
-    ? `resets ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
-    : `resets ${d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
-}
-
-function limitLabel(l: Limit): string {
-  if (l.kind === "session") return "5-hour";
-  if (l.kind === "weekly_all") return "weekly";
-  if (l.kind === "weekly_scoped") return l.scope ? `weekly · ${l.scope.toLowerCase()}` : "weekly";
-  return l.kind.replace(/_/g, " ");
-}
 
 type Showing =
   | { kind: "session"; session: Session }
@@ -83,6 +69,7 @@ export default function App() {
   const [, setPane] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [elsewhereOpen, setElsewhereOpen] = useState(true);
+  const [filter, setFilter] = useState("");
   const [menu, setMenu] = useState<{ x: number; y: number; group: Group } | null>(null);
   const [load, setLoad] = useState<Load | null>(null);
   const [limits, setLimits] = useState<Limit[] | null>(null);
@@ -273,8 +260,29 @@ export default function App() {
         }
       }
     }
-    return out;
-  }, [groups, reposByGroup, repoByPath, live, elsewhere, elsewhereOpen]);
+    // Filtering keeps the branch a match sits on: a hit with its parents
+    // removed is a name with nowhere to stand.
+    const q = filter.trim().toLowerCase();
+    if (q === "") return out;
+    const keep = new Set<number>();
+    out.forEach((row, i) => {
+      const text =
+        row.kind === "ticket"
+          ? `${row.ticket.id} ${row.ticket.title ?? ""}`
+          : row.kind === "session"
+            ? `${row.session.name ?? ""} ${row.session.cwd}`
+            : row.name;
+      if (!text.toLowerCase().includes(q)) return;
+      keep.add(i);
+      for (let j = i - 1, d = row.depth; j >= 0 && d > 0; j--) {
+        if (out[j].depth < d) {
+          keep.add(j);
+          d = out[j].depth;
+        }
+      }
+    });
+    return out.filter((_, i) => keep.has(i));
+  }, [groups, reposByGroup, repoByPath, live, elsewhere, elsewhereOpen, filter]);
 
   const openFile = (path: string, title: string) => setShowing({ kind: "file", path, title });
 
@@ -285,9 +293,6 @@ export default function App() {
       <header className="bar">
         <span className="brand">devflow</span>
         <span className="spacer" />
-        <button className="tool" title="Add a group" onClick={() => void addGroup()}>
-          + group
-        </button>
         <span className="generated">
           {status ? new Date(status.generated_at).toLocaleTimeString() : ""}
         </span>
@@ -300,11 +305,19 @@ export default function App() {
       )}
 
       <div className="body">
-        <aside
-          className="tree"
-          ref={tree}
-          onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 120)}
-        >
+        <aside className="aside">
+          <AsideHead
+            filter={filter}
+            onFilter={setFilter}
+            onAddGroup={() => void addGroup()}
+            onCollapseAll={() => persist(groups.map((g) => ({ ...g, open: false })))}
+          />
+
+          <div
+            className="tree"
+            ref={tree}
+            onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 120)}
+          >
           {rows.map((row) => (
             <TreeRow
               key={row.key}
@@ -332,12 +345,15 @@ export default function App() {
             />
           ))}
 
-          {groups.length === 0 && (
-            <div className="empty hint">
-              Nothing is being watched yet. Add a group — a folder of repositories, or an
-              empty one you fill by hand.
-            </div>
-          )}
+            {groups.length === 0 && (
+              <div className="empty hint">
+                Nothing is being watched yet. Add a group — a folder of repositories, or
+                an empty one you fill by hand.
+              </div>
+            )}
+          </div>
+
+          <AsideFoot load={load} limits={limits} limitsError={limitsError} />
         </aside>
 
         {scrolled && (
@@ -409,26 +425,6 @@ export default function App() {
         </main>
       </div>
 
-      <footer className="load">
-        <span className="active">{load?.sessions ?? 0} active</span>
-        <span className="metric">
-          cpu <b>{load ? `${load.cpu_percent}%` : "—"}</b>
-        </span>
-        <span className="metric" title="Summed resident memory — shared pages counted once per session, so read it as an upper bound">
-          mem <b>{load ? `${(load.memory_mb / 1024).toFixed(1)} GB` : "—"}</b>
-        </span>
-        <span className="spacer" />
-        {limitsError && <span className="metric dim">limits unavailable</span>}
-        {(limits ?? []).map((l) => (
-          <span className={`limit ${l.severity}`} key={l.kind + (l.scope ?? "")}>
-            <span className="bar">
-              <span style={{ width: `${Math.min(100, l.percent)}%` }} />
-            </span>
-            {limitLabel(l)} <b>{l.percent}%</b>
-            <span className="resets">{shortReset(l.resets_at)}</span>
-          </span>
-        ))}
-      </footer>
     </div>
   );
 }
