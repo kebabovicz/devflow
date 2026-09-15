@@ -91,7 +91,10 @@ pub fn engine_status(paths: Vec<String>) -> Result<serde_json::Value, String> {
 /// `claude attach` takes; the registry's own is the full one.
 #[tauri::command]
 pub fn claude_agents() -> Result<serde_json::Value, String> {
-    let raw = run_json(Path::new("claude"), &["agents", "--json"])?;
+    // `--all` or the finished ones are invisible. A background session that
+    // ended still holds its conversation and can be opened again, so leaving it
+    // out of the window makes the window disagree with `claude agents`.
+    let raw = run_json(Path::new("claude"), &["agents", "--json", "--all"])?;
     let list = raw.as_array().cloned().unwrap_or_default();
     let out: Vec<serde_json::Value> = list
         .into_iter()
@@ -107,7 +110,11 @@ pub fn claude_agents() -> Result<serde_json::Value, String> {
                 "session_id": full,
                 "name": s.get("name").cloned().unwrap_or(serde_json::Value::Null),
                 "kind": s.get("kind").cloned().unwrap_or(serde_json::Value::Null),
-                "status": s.get("status").cloned().unwrap_or(serde_json::Value::Null),
+                // A live session reports `status` (busy / idle); one that has
+                // ended reports `state` (done / stopped). Two names for the same
+                // question, joined here so nothing downstream has to know.
+                "status": s.get("status").or_else(|| s.get("state")).cloned()
+                    .unwrap_or(serde_json::Value::Null),
                 "pid": s.get("pid").cloned().unwrap_or(serde_json::Value::Null),
                 "cwd": s.get("cwd").and_then(|v| v.as_str()).unwrap_or(""),
                 "started_at": started,

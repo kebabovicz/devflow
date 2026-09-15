@@ -71,6 +71,10 @@ const rows: Row[] = [
   { kind: "ticket", depth: 2, key: "t2", ticket: ticket("01-offset-overflow", "blocked", { acceptance: { total: 3, checked: 0 } }), waiting: "an answer" },
   { kind: "ticket", depth: 2, key: "t3", ticket: ticket("02-account-disable-route", "open", { acceptance: { total: 2, checked: 0 }, blocked_by: ["01"] }), waiting: null },
   { kind: "repo", depth: 1, key: "r4", name: "spec-hub", path: "/p/spec-hub", repo: repo("spec-hub", null, false), waiting: 0, working: 0 },
+  { kind: "dir", depth: 0, key: "d1", name: "~/meteora/spec-hub", path: "/h/meteora/spec-hub", open: true, working: 1 },
+  { kind: "session", depth: 1, key: "s4", session: { ...session("onboarding documentation review", "done", "/h/meteora/spec-hub"), live: false } },
+  { kind: "session", depth: 1, key: "s5", session: { ...session("loop-test", "stopped", "/h/meteora/spec-hub"), live: false } },
+  { kind: "session", depth: 1, key: "s6", session: { ...session("kebabovicz-a4", "idle", "/h/meteora/spec-hub"), kind: "interactive" } },
 ];
 
 function Fixture() {

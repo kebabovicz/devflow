@@ -95,6 +95,7 @@ export const groupsSave = (groups: Group[]) =>
   invoke<void>("groups_save", { groups: { groups } });
 export const groupRepos = (group: Group) => invoke<string[]>("group_repos", { group });
 export const readText = (path: string) => invoke<string>("read_text", { path });
+export const homeDir = () => invoke<string>("home_dir");
 
 export interface Limit {
   kind: string;

@@ -117,6 +117,12 @@ pub fn group_repos(group: Group) -> Result<Vec<String>, String> {
 /// A text file, for reading in the window. Capped: this is for tickets, maps
 /// and notes, and a pane is not the place to discover that something is a
 /// gigabyte of log.
+/// The home directory, so paths can be written the way a person writes them.
+#[tauri::command]
+pub fn home_dir() -> String {
+    std::env::var("HOME").unwrap_or_default()
+}
+
 #[tauri::command]
 pub fn read_text(path: String) -> Result<String, String> {
     const CAP: u64 = 2 * 1024 * 1024;

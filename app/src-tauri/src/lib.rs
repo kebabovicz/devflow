@@ -38,6 +38,7 @@ pub fn run() {
             groups::groups_save,
             groups::group_repos,
             groups::read_text,
+            groups::home_dir,
             resources::session_load,
             resources::account_limits,
             pty::pane_open,

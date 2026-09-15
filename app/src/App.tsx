@@ -7,13 +7,13 @@
 // exists to replace.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   claudeAgents,
   engineStatus,
   groupRepos,
   groupsLoad,
   groupsSave,
+  homeDir,
   accountLimits,
   sessionLoad,
   type Group,
@@ -68,8 +68,10 @@ export default function App() {
   const [showing, setShowing] = useState<Showing>(null);
   const [, setPane] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [elsewhereOpen, setElsewhereOpen] = useState(true);
+  const [closedDirs, setClosedDirs] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
+  const [home, setHome] = useState("");
+  const [adding, setAdding] = useState<null | { to: Group | null }>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; group: Group } | null>(null);
   const [load, setLoad] = useState<Load | null>(null);
   const [limits, setLimits] = useState<Limit[] | null>(null);
@@ -77,6 +79,12 @@ export default function App() {
   const tree = useRef<HTMLDivElement>(null);
 
   // ── what is watched ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    homeDir()
+      .then((h) => setHome(h.replace(/\/$/, "")))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     groupsLoad()
@@ -89,32 +97,31 @@ export default function App() {
     groupsSave(next).catch((e) => setError(String(e)));
   }, []);
 
-  const addGroup = useCallback(async () => {
-    // Picking a folder is the common case, so it is the same gesture as adding
-    // a group. Cancelling still makes the group — an empty one you fill by hand
-    // is a legitimate thing to want.
-    const picked = await openDialog({
-      directory: true,
-      multiple: false,
-      title: "Folder for the group",
-    });
-    const folder = typeof picked === "string" ? picked : null;
-    const name = folder ? folder.split("/").filter(Boolean).pop()! : "Group";
-    persist([...groups, { id: newId(), name, repos: [], folder, open: true }]);
-  }, [groups, persist]);
+  const addGroup = useCallback(
+    (path: string) => {
+      const folder = path.trim().replace(/\/+$/, "");
+      if (folder === "") return;
+      const full = folder.startsWith("~") ? home + folder.slice(1) : folder;
+      persist([
+        ...groups,
+        { id: newId(), name: full.split("/").filter(Boolean).pop() ?? "Group", repos: [], folder: full, open: true },
+      ]);
+    },
+    [groups, home, persist],
+  );
 
   const addRepo = useCallback(
-    async (group: Group) => {
-      const picked = await openDialog({ directory: true, multiple: true, title: "Repositories" });
-      const paths = Array.isArray(picked) ? picked : typeof picked === "string" ? [picked] : [];
-      if (paths.length === 0) return;
+    (group: Group, path: string) => {
+      const p = path.trim().replace(/\/+$/, "");
+      if (p === "") return;
+      const full = p.startsWith("~") ? home + p.slice(1) : p;
       persist(
         groups.map((g) =>
-          g.id === group.id ? { ...g, repos: [...new Set([...g.repos, ...paths])] } : g,
+          g.id === group.id ? { ...g, repos: [...new Set([...g.repos, full])] } : g,
         ),
       );
     },
-    [groups, persist],
+    [groups, home, persist],
   );
 
   // ── state ─────────────────────────────────────────────────────────────────
@@ -241,21 +248,29 @@ export default function App() {
       }
     }
 
-    // Sessions no group covers are still running, and a tree that omitted them
-    // would be lying about what is going on.
+    // Sessions no group covers are still work, and hiding them would make the
+    // window disagree with `claude agents`. They are laid out the way that
+    // command lays them out: by the directory they stand in.
     if (elsewhere.length > 0) {
-      out.push({
-        kind: "group",
-        depth: 0,
-        key: "g:elsewhere",
-        name: "Elsewhere",
-        open: elsewhereOpen,
-        group: { id: "elsewhere", name: "Elsewhere", repos: [], folder: null, open: elsewhereOpen },
-        waiting: 0,
-        working: elsewhere.filter((s) => s.status === "busy").length,
-      });
-      if (elsewhereOpen) {
-        for (const sn of elsewhere) {
+      const byDir = new Map<string, Session[]>();
+      for (const sn of elsewhere) {
+        const list = byDir.get(sn.cwd) ?? [];
+        list.push(sn);
+        byDir.set(sn.cwd, list);
+      }
+      for (const [dir, list] of [...byDir.entries()].sort()) {
+        const open = !closedDirs.has(dir);
+        out.push({
+          kind: "dir",
+          depth: 0,
+          key: `d:${dir}`,
+          name: dir.replace(home, "~"),
+          path: dir,
+          open,
+          working: list.filter((s) => s.status === "busy").length,
+        });
+        if (!open) continue;
+        for (const sn of list) {
           out.push({ kind: "session", depth: 1, key: `s:else:${sn.session_id}`, session: sn });
         }
       }
@@ -282,7 +297,7 @@ export default function App() {
       }
     });
     return out.filter((_, i) => keep.has(i));
-  }, [groups, reposByGroup, repoByPath, live, elsewhere, elsewhereOpen, filter]);
+  }, [groups, reposByGroup, repoByPath, live, elsewhere, closedDirs, home, filter]);
 
   const openFile = (path: string, title: string) => setShowing({ kind: "file", path, title });
 
@@ -309,9 +324,21 @@ export default function App() {
           <AsideHead
             filter={filter}
             onFilter={setFilter}
-            onAddGroup={() => void addGroup()}
+            onAddGroup={() => setAdding({ to: null })}
             onCollapseAll={() => persist(groups.map((g) => ({ ...g, open: false })))}
           />
+
+          {adding && (
+            <PathPrompt
+              label={adding.to ? `Repository for ${adding.to.name}` : "Folder for a new group"}
+              onCancel={() => setAdding(null)}
+              onSubmit={(path) => {
+                if (adding.to) addRepo(adding.to, path);
+                else addGroup(path);
+                setAdding(null);
+              }}
+            />
+          )}
 
           <div
             className="tree"
@@ -334,9 +361,16 @@ export default function App() {
                   showing.session.session_id === row.session.session_id)
               }
               onToggle={() => {
-                if (row.kind !== "group") return;
-                if (row.group.id === "elsewhere") setElsewhereOpen((v) => !v);
-                else persist(groups.map((x) => (x.id === row.group.id ? { ...x, open: !x.open } : x)));
+                if (row.kind === "dir") {
+                  setClosedDirs((prev) => {
+                    const next = new Set(prev);
+                    next.has(row.path) ? next.delete(row.path) : next.add(row.path);
+                    return next;
+                  });
+                }
+                if (row.kind === "group") {
+                  persist(groups.map((x) => (x.id === row.group.id ? { ...x, open: !x.open } : x)));
+                }
               }}
               onPick={() => {
                 if (row.kind === "ticket") openFile(row.ticket.path, row.ticket.id);
@@ -353,18 +387,18 @@ export default function App() {
             )}
           </div>
 
+          {scrolled && (
+            <button
+              className="to-top"
+              onClick={() => tree.current?.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              jump to top
+            </button>
+          )}
+
           <AsideFoot load={load} limits={limits} limitsError={limitsError} />
         </aside>
 
-        {scrolled && (
-          <button
-            className="to-top"
-            title="Back to the top"
-            onClick={() => tree.current?.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            ▲
-          </button>
-        )}
 
         {menu && (
           <>
@@ -374,7 +408,7 @@ export default function App() {
                 onClick={() => {
                   const g = menu.group;
                   setMenu(null);
-                  void addRepo(g);
+                  setAdding({ to: g });
                 }}
               >
                 Add repository…
@@ -425,6 +459,34 @@ export default function App() {
         </main>
       </div>
 
+    </div>
+  );
+}
+
+function PathPrompt({
+  label,
+  onSubmit,
+  onCancel,
+}: {
+  label: string;
+  onSubmit: (path: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState("");
+  return (
+    <div className="prompt">
+      <label>{label}</label>
+      <input
+        autoFocus
+        placeholder="~/projects"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") onSubmit(value);
+          if (e.key === "Escape") onCancel();
+        }}
+        onBlur={() => value.trim() === "" && onCancel()}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ const BASE = 6;
 
 export type Row =
   | { kind: "group"; depth: number; key: string; name: string; open: boolean; group: Group; waiting: number; working: number }
+  | { kind: "dir"; depth: number; key: string; name: string; path: string; open: boolean; working: number }
   | { kind: "repo"; depth: number; key: string; name: string; path: string; repo?: Repo; waiting: number; working: number }
   | { kind: "ticket"; depth: number; key: string; ticket: Ticket; waiting: string | null }
   | { kind: "session"; depth: number; key: string; session: Session };
@@ -83,12 +84,17 @@ function Branch({ name, engine }: { name: string | null; engine: boolean }) {
 
 /// The session state a row can honestly show.
 ///
-/// The registry answers `busy`, `idle`, or nothing at all for a session that
-/// has exited. The design asks for working, blocked, error, done and stopped —
-/// three of which are not in the data and are therefore not invented here.
+/// A running session reports busy or idle; one that has ended reports done or
+/// stopped. That is four of the five states the design asks for. The fifth —
+/// error — is genuinely not in the registry: a session killed by a rate limit
+/// and one stopped by hand look identical from here, so it is not drawn.
 function sessionTone(s: Session): string {
-  if (!s.live) return "gone";
-  return s.status === "busy" ? "working" : "idle";
+  switch (s.status) {
+    case "busy": return "working";
+    case "done": return "done";
+    case "stopped": return "stopped";
+    default: return s.live ? "idle" : "stopped";
+  }
 }
 
 function ticketTone(t: Ticket): string {
@@ -106,7 +112,8 @@ function ticketNote(t: Ticket): string {
 }
 
 function sessionNote(s: Session, repo?: string): string {
-  const bits: string[] = [s.live ? (s.status ?? "idle") : "gone"];
+  // The registry's own word for the state, whichever field it came in on.
+  const bits: string[] = [s.status ?? (s.live ? "idle" : "stopped")];
   // A session working in a worktree stands somewhere else than the repository
   // it belongs to, and which worktree it is in is the useful half of that.
   if (repo && s.cwd !== repo) bits.push(s.cwd.slice(repo.length + 1));
@@ -126,8 +133,8 @@ export function TreeRow({
   onPick: () => void;
   onMenu?: (x: number, y: number) => void;
 }) {
-  if (row.kind === "group" || row.kind === "repo") {
-    const open = row.kind === "group" ? row.open : true;
+  if (row.kind === "group" || row.kind === "repo" || row.kind === "dir") {
+    const open = row.kind === "repo" ? true : row.open;
     return (
       <div
         className={`node ${row.kind}`}
@@ -146,7 +153,7 @@ export function TreeRow({
           <span className="name">{row.name}</span>
         </span>
         <span className="right">
-          <Counts waiting={row.waiting} working={row.working} />
+          <Counts waiting={row.kind === "dir" ? 0 : row.waiting} working={row.working} />
           {row.kind === "repo" && (
             <Branch name={row.repo ? row.repo.branch : null} engine={row.repo?.engine ?? false} />
           )}
@@ -179,12 +186,19 @@ export function TreeRow({
 
   const s = row.session;
   const tone = sessionTone(s);
-  const attachable = s.kind === "background" && s.live;
+  // Every background session can be opened, finished or not: `claude attach`
+  // reopens a conversation that has ended. Only an interactive one is out of
+  // reach, because it belongs to the terminal that started it.
+  const attachable = s.kind === "background";
   return (
     <div
       className={`node leaf session ${selected ? "on" : ""} ${attachable ? "" : "external"}`}
       onClick={() => attachable && onPick()}
-      title={attachable ? s.cwd : `${s.cwd} — started outside this window, view only`}
+      title={
+        attachable
+          ? s.cwd
+          : `${s.cwd} — started in a terminal of its own, so it can be watched but not opened here`
+      }
     >
       <Indent depth={row.depth} />
       <span className="twist" />

@@ -486,21 +486,6 @@ html, body, #root {
 
 /* ── odds and ends ────────────────────────────────────────────────────────── */
 
-.to-top {
-  position: absolute;
-  left: 292px;
-  bottom: 16px;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--card);
-  color: var(--dim);
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
-}
-.to-top:hover { color: var(--ink); border-color: var(--dim); }
 
 .scrim { position: fixed; inset: 0; z-index: 10; }
 .menu {
@@ -527,3 +512,39 @@ html, body, #root {
 }
 .menu button:hover { background: rgba(255, 255, 255, 0.08); }
 .menu button.danger { color: var(--bad); }
+
+/* ── adding something to the tree ─────────────────────────────────────────── */
+
+/* A path is typed, not chosen in a system panel: the panel takes the window
+   away and returns something that cannot be corrected without opening it
+   again. A field can be pasted into, edited and read back. */
+.prompt { padding: 0 12px 10px; display: flex; flex-direction: column; gap: 5px; }
+.prompt label { font-size: 10px; letter-spacing: 0.06em; color: var(--faint); }
+.prompt input {
+  height: 26px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+  color: var(--ink);
+  font: 12px/1 var(--font);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.prompt input::placeholder { color: var(--faint); }
+
+/* Sitting above the readout rather than floating over the tree, and wide
+   enough to say what it does. */
+.to-top {
+  align-self: center;
+  margin: 0 0 9px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--dim);
+  font: 10.5px/1 var(--font);
+  cursor: pointer;
+}
+.to-top:hover { color: var(--ink); border-color: var(--dim); }
