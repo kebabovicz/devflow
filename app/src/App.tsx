@@ -387,14 +387,18 @@ export default function App() {
             )}
           </div>
 
-          {scrolled && (
+          {/* Kept mounted so it can fade both ways, and out of the flow so the
+              tree does not resize under the pointer when it appears. */}
+          <div className="to-top-slot">
             <button
-              className="to-top"
+              className={`to-top ${scrolled ? "on" : ""}`}
+              tabIndex={scrolled ? 0 : -1}
+              aria-hidden={!scrolled}
               onClick={() => tree.current?.scrollTo({ top: 0, behavior: "smooth" })}
             >
               jump to top
             </button>
-          )}
+          </div>
 
           <AsideFoot load={load} limits={limits} limitsError={limitsError} />
         </aside>

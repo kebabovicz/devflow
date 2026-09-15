@@ -96,6 +96,9 @@ function Fixture() {
               <TreeRow key={row.key} row={row} selected={row.key === "t1"} onToggle={() => {}} onPick={() => {}} />
             ))}
           </div>
+          <div className="to-top-slot">
+            <button className="to-top on">jump to top</button>
+          </div>
           <AsideFoot
             load={{ sessions: 3, cpu_percent: 62, memory_mb: 1229 }}
             limits={[

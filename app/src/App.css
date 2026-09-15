@@ -534,17 +534,30 @@ html, body, #root {
 }
 .prompt input::placeholder { color: var(--faint); }
 
-/* Sitting above the readout rather than floating over the tree, and wide
-   enough to say what it does. */
+/* It floats just above the readout rather than taking a row of its own: a
+   control that appears by pushing the list up moves the thing you were
+   reaching for. Kept mounted and faded, so it leaves as softly as it arrives. */
+.to-top-slot { position: relative; height: 0; }
 .to-top {
-  align-self: center;
-  margin: 0 0 9px;
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translate(-50%, 6px);
   padding: 4px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(30, 33, 40, 0.82);
+  backdrop-filter: blur(8px);
   color: var(--dim);
   font: 10.5px/1 var(--font);
+  white-space: nowrap;
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, color 120ms ease;
 }
+.to-top.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
 .to-top:hover { color: var(--ink); border-color: var(--dim); }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: none; }
+}
