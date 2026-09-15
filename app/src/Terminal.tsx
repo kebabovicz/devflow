@@ -3,6 +3,12 @@
 // The session outlives the pane. Closing this component ends the attachment,
 // not the work — measured before the pane was written, and it is what makes
 // closing a pane an ordinary gesture rather than a destructive one.
+//
+// Sizing is the part that has to be exactly right. A full-screen terminal
+// interface draws to the size the pseudo-terminal claims to be, so a pane
+// opened with a stale row count paints rows that fall off the bottom of the
+// window and never come back. The pane is therefore not opened until the
+// element has a real size, and every later size change is sent through.
 
 import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
@@ -26,27 +32,50 @@ export function TerminalPane({
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!host.current) return;
+    const element = host.current;
+    if (!element) return;
     let pane: number | null = null;
     let disposed = false;
+    let sent = { rows: 0, cols: 0 };
     const unlisten: Array<() => void> = [];
 
     const term = new Terminal({
       fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
       fontSize: 12,
+      lineHeight: 1.2,
       allowProposedApi: true,
-      // The window paints its own material behind the page; a transparent
-      // background lets that through instead of stacking another black layer.
       theme: { background: "#00000000", foreground: "#e6e6e6" },
       cursorBlink: true,
       scrollback: 20000,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
-    term.open(host.current);
-    fit.fit();
+    term.open(element);
+
+    // Tell the pseudo-terminal what the pane actually is, and only when it
+    // changed — a resize storm during a window drag would otherwise send one
+    // call per frame.
+    const sync = () => {
+      if (element.clientWidth === 0 || element.clientHeight === 0) return false;
+      try {
+        fit.fit();
+      } catch {
+        return false;
+      }
+      if (term.rows === sent.rows && term.cols === sent.cols) return true;
+      sent = { rows: term.rows, cols: term.cols };
+      if (pane !== null) void paneResize(pane, term.rows, term.cols);
+      return true;
+    };
 
     (async () => {
+      // Wait for layout. Opening against a zero-height element would fix the
+      // session at 24 rows and leave the bottom of its interface off-screen.
+      for (let attempt = 0; attempt < 60 && !sync(); attempt++) {
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      if (disposed) return;
+
       try {
         pane = await paneOpen(session, term.rows, term.cols);
         if (disposed) {
@@ -71,22 +100,22 @@ export function TerminalPane({
         term.onData((data) => {
           if (pane !== null) void paneWrite(pane, encode(data));
         });
+
+        // One more pass once the session is attached: the first paint can
+        // change the scrollbar, and with it the width.
+        sync();
       } catch (err) {
         onError(String(err));
       }
     })();
 
-    const onResize = () => {
-      fit.fit();
-      if (pane !== null) void paneResize(pane, term.rows, term.cols);
-    };
-    window.addEventListener("resize", onResize);
-    const observer = new ResizeObserver(onResize);
-    observer.observe(host.current);
+    const observer = new ResizeObserver(() => sync());
+    observer.observe(element);
+    window.addEventListener("resize", sync);
 
     return () => {
       disposed = true;
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", sync);
       observer.disconnect();
       unlisten.forEach((u) => u());
       if (pane !== null) void paneClose(pane);

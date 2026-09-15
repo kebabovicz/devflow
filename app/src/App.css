@@ -1,10 +1,14 @@
-/* The window is translucent, and translucency alone is not a background.
-   The system blurs what is behind the window; this scrim sits on top of that
-   blur and is what text is actually read against. Without it the desktop
-   competes with every line of the interface and wins. */
+/* Two surfaces, and the difference between them is the whole look.
+   The window itself stays translucent — the system's blur shows through the
+   chrome and the sidebar, where the text is short labels a light scrim carries.
+   The terminal does not: it is dense text that has to be read for minutes at a
+   time, so it sits on a solid card inset from the window, the way a document
+   does in an editor. Translucency behind a wall of monospace is a wall of
+   monospace you cannot read. */
 
 :root {
-  --scrim: rgba(22, 24, 30, 0.82);
+  --scrim: rgba(20, 22, 28, 0.42);
+  --card: #15171d;
   --ink: #f2f3f5;
   --dim: #b6b8c0;
   --faint: #8b8d97;
@@ -70,10 +74,9 @@ html, body, #root {
 
 .tree {
   width: 340px;
-  background: rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.10);
   flex: none;
   overflow-y: auto;
-  border-right: 1px solid var(--line);
   padding-bottom: 24px;
 }
 
@@ -129,7 +132,17 @@ html, body, #root {
 .empty { padding: 4px 12px; color: var(--faint); }
 .empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
 
-.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 8px 8px 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
 
 .pane-head {
   display: flex;
@@ -150,7 +163,23 @@ html, body, #root {
 }
 .pane-head button:hover { color: var(--ink); }
 
-.terminal-host { flex: 1; min-height: 0; padding: 6px 0 0 8px; }
-.terminal-host .xterm { height: 100%; }
+/* The pane clips; the terminal sizes itself to what is left. Padding lives on
+   this element because that is what the fit addon measures, so the rows it
+   computes are the rows that actually fit. */
+.terminal-host {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 8px 4px 8px 10px;
+  overflow: hidden;
+}
+.terminal-host .xterm { height: 100%; width: 100%; }
 .terminal-host .xterm-viewport { background: transparent !important; }
 .terminal-host .xterm-screen { background: transparent; }
+/* A thin scrollbar rather than none: what is scrollable is worth showing, and
+   a full-screen interface simply has nothing to scroll. */
+.terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
