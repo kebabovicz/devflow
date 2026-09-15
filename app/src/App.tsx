@@ -26,6 +26,7 @@ import {
 } from "./engine";
 import { TerminalPane } from "./Terminal";
 import { DocumentPane } from "./Document";
+import { TreeRow, type Row } from "./Tree";
 import "./App.css";
 
 const POLL_MS = 2500;
@@ -70,14 +71,6 @@ function waitingOn(t: Ticket): string | null {
   return null;
 }
 
-function ticketNote(t: Ticket): string {
-  const bits: string[] = [];
-  if (t.acceptance.total > 0) bits.push(`${t.acceptance.checked}/${t.acceptance.total}`);
-  if (t.lock) bits.push(t.lock.owner);
-  if (t.blocked_by.length > 0) bits.push(`after ${t.blocked_by.join(", ")}`);
-  return bits.join(" · ");
-}
-
 const newId = () => Math.random().toString(36).slice(2, 10);
 
 export default function App() {
@@ -89,6 +82,8 @@ export default function App() {
   const [showing, setShowing] = useState<Showing>(null);
   const [, setPane] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [elsewhereOpen, setElsewhereOpen] = useState(true);
+  const [menu, setMenu] = useState<{ x: number; y: number; group: Group } | null>(null);
   const [load, setLoad] = useState<Load | null>(null);
   const [limits, setLimits] = useState<Limit[] | null>(null);
   const [limitsError, setLimitsError] = useState(false);
@@ -198,37 +193,8 @@ export default function App() {
     [sessions],
   );
 
-  const attention = useMemo(() => {
-    const out: Array<{ repo: Repo; ticket: Ticket; why: string }> = [];
-    for (const r of status?.repos ?? []) {
-      for (const m of r.maps) {
-        for (const t of m.tickets) {
-          const why = waitingOn(t);
-          if (why) out.push({ repo: r, ticket: t, why });
-        }
-      }
-    }
-    return out;
-  }, [status]);
 
 
-  const sessionRow = (s: Session) => {
-    const attachable = s.kind === "background";
-    const on = showing?.kind === "session" && showing.session.session_id === s.session_id;
-    return (
-      <div
-        key={s.session_id}
-        className={`row session ${on ? "on" : ""} ${attachable ? "" : "external"}`}
-        onClick={() => attachable && setShowing({ kind: "session", session: s })}
-        title={attachable ? s.cwd : `${s.cwd} — started outside this window, view only`}
-      >
-        <span className={`dot ${s.status ?? "idle"}`} />
-        <span className="id">{s.name ?? s.id}</span>
-        <span className="why">{s.status ?? ""}</span>
-        <span className="where">{s.cwd.split("/").pop()}</span>
-      </div>
-    );
-  };
 
   const watched = useMemo(
     () => [...new Set(Object.values(reposByGroup).flat())],
@@ -242,6 +208,74 @@ export default function App() {
     [live, watched],
   );
 
+
+  const rows = useMemo(() => {
+    const out: Row[] = [];
+    const waitingIn = (r?: Repo) =>
+      r ? r.maps.flatMap((m) => m.tickets).filter((t) => waitingOn(t) !== null).length : 0;
+
+    for (const g of groups) {
+      const paths = reposByGroup[g.id] ?? [];
+      const repos = paths.map((p) => repoByPath.get(p));
+      out.push({
+        kind: "group",
+        depth: 0,
+        key: `g:${g.id}`,
+        name: g.name,
+        open: g.open,
+        group: g,
+        waiting: repos.reduce((n, r) => n + waitingIn(r), 0),
+        working: paths.reduce((n, p) => n + sessionsUnder(live, p).filter((s) => s.status === "busy").length, 0),
+      });
+      if (!g.open) continue;
+
+      for (const path of paths) {
+        const r = repoByPath.get(path);
+        const mine = sessionsUnder(live, path);
+        out.push({
+          kind: "repo",
+          depth: 1,
+          key: `r:${g.id}:${path}`,
+          name: path.split("/").filter(Boolean).pop()!,
+          path,
+          repo: r,
+          waiting: waitingIn(r),
+          working: mine.filter((s) => s.status === "busy").length,
+        });
+        for (const m of r?.maps ?? []) {
+          for (const t of m.tickets) {
+            if (t.status === "done" || t.status === "cancelled") continue;
+            out.push({ kind: "ticket", depth: 2, key: `t:${t.path}`, ticket: t, waiting: waitingOn(t) });
+          }
+        }
+        for (const sn of mine) {
+          out.push({ kind: "session", depth: 2, key: `s:${g.id}:${sn.session_id}`, session: sn });
+        }
+      }
+    }
+
+    // Sessions no group covers are still running, and a tree that omitted them
+    // would be lying about what is going on.
+    if (elsewhere.length > 0) {
+      out.push({
+        kind: "group",
+        depth: 0,
+        key: "g:elsewhere",
+        name: "Elsewhere",
+        open: elsewhereOpen,
+        group: { id: "elsewhere", name: "Elsewhere", repos: [], folder: null, open: elsewhereOpen },
+        waiting: 0,
+        working: elsewhere.filter((s) => s.status === "busy").length,
+      });
+      if (elsewhereOpen) {
+        for (const sn of elsewhere) {
+          out.push({ kind: "session", depth: 1, key: `s:else:${sn.session_id}`, session: sn });
+        }
+      }
+    }
+    return out;
+  }, [groups, reposByGroup, repoByPath, live, elsewhere, elsewhereOpen]);
+
   const openFile = (path: string, title: string) => setShowing({ kind: "file", path, title });
 
   // ── the window ────────────────────────────────────────────────────────────
@@ -251,6 +285,9 @@ export default function App() {
       <header className="bar">
         <span className="brand">devflow</span>
         <span className="spacer" />
+        <button className="tool" title="Add a group" onClick={() => void addGroup()}>
+          + group
+        </button>
         <span className="generated">
           {status ? new Date(status.generated_at).toLocaleTimeString() : ""}
         </span>
@@ -268,120 +305,38 @@ export default function App() {
           ref={tree}
           onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 120)}
         >
-          {/* Working on the tree belongs at its top: that is where the eye
-              starts, and it is the one place a long list cannot push away. */}
-          <div className="tools">
-            <button className="add" onClick={() => void addGroup()}>
-              + group
-            </button>
-          </div>
-
-          {attention.length > 0 && (
-            <section className="group attention">
-              <h2>
-                Waiting on you<span className="count">{attention.length}</span>
-              </h2>
-              {attention.map(({ repo, ticket, why }) => (
-                <div
-                  className="row waiting"
-                  key={`${repo.path}/${ticket.id}`}
-                  onClick={() => openFile(ticket.path, ticket.id)}
-                  title={ticket.title ?? ticket.id}
-                >
-                  <span className="id">{ticket.id}</span>
-                  <span className="why">{why}</span>
-                  <span className="where">{repo.name}</span>
-                </div>
-              ))}
-            </section>
-          )}
-
-
-          {groups.map((g) => (
-            <section className="group" key={g.id}>
-              <h2>
-                <button
-                  className="twisty"
-                  onClick={() =>
-                    persist(groups.map((x) => (x.id === g.id ? { ...x, open: !x.open } : x)))
-                  }
-                >
-                  {g.open ? "▾" : "▸"} {g.name}
-                </button>
-                <button
-                  className="tiny"
-                  title="Add repositories to this group"
-                  onClick={() => void addRepo(g)}
-                >
-                  +
-                </button>
-                <button
-                  className="tiny"
-                  title="Remove this group — the repositories themselves are untouched"
-                  onClick={() => persist(groups.filter((x) => x.id !== g.id))}
-                >
-                  −
-                </button>
-              </h2>
-
-              {g.open &&
-                (reposByGroup[g.id] ?? []).map((path) => {
-                  const r = repoByPath.get(path);
-                  const name = path.split("/").filter(Boolean).pop()!;
-                  return (
-                    <div key={path}>
-                      <div className="repo">
-                        <span className="id">{name}</span>
-                        <span className="where">{r ? (r.branch ?? "not a repository") : "…"}</span>
-                      </div>
-                      {sessionsUnder(live, path).map(sessionRow)}
-                      {r && !r.engine && <div className="empty">engine not set up here</div>}
-                      {r?.maps.map((m) => (
-                        <div key={m.path}>
-                          <div
-                            className="effort"
-                            onClick={() => openFile(`${m.path}/map.md`, m.slug)}
-                            title="Open the map"
-                          >
-                            {m.slug}
-                          </div>
-                          {m.tickets
-                            .filter((t) => t.status !== "done" && t.status !== "cancelled")
-                            .map((t) => (
-                              <div
-                                className={`row ticket ${
-                                  showing?.kind === "file" && showing.path === t.path ? "on" : ""
-                                }`}
-                                key={t.path}
-                                onClick={() => openFile(t.path, t.id)}
-                                title={t.title ?? t.id}
-                              >
-                                <span className="id">{t.id}</span>
-                                <span className="why">{t.status ?? "?"}</span>
-                                <span className="where">{ticketNote(t)}</span>
-                              </div>
-                            ))}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-
-              {g.open && (reposByGroup[g.id] ?? []).length === 0 && (
-                <div className="empty">
-                  {g.folder ? "nothing with devflow in that folder" : "no repositories yet"}
-                </div>
-              )}
-            </section>
+          {rows.map((row) => (
+            <TreeRow
+              key={row.key}
+              onMenu={(x, y) =>
+                row.kind === "group" && row.group.id !== "elsewhere" && setMenu({ x, y, group: row.group })
+              }
+              row={row}
+              selected={
+                (row.kind === "ticket" &&
+                  showing?.kind === "file" &&
+                  showing.path === row.ticket.path) ||
+                (row.kind === "session" &&
+                  showing?.kind === "session" &&
+                  showing.session.session_id === row.session.session_id)
+              }
+              onToggle={() => {
+                if (row.kind !== "group") return;
+                if (row.group.id === "elsewhere") setElsewhereOpen((v) => !v);
+                else persist(groups.map((x) => (x.id === row.group.id ? { ...x, open: !x.open } : x)));
+              }}
+              onPick={() => {
+                if (row.kind === "ticket") openFile(row.ticket.path, row.ticket.id);
+                if (row.kind === "session") setShowing({ kind: "session", session: row.session });
+              }}
+            />
           ))}
 
-          {elsewhere.length > 0 && (
-            <section className="group">
-              <h2>
-                Elsewhere<span className="count">{elsewhere.length}</span>
-              </h2>
-              {elsewhere.map(sessionRow)}
-            </section>
+          {groups.length === 0 && (
+            <div className="empty hint">
+              Nothing is being watched yet. Add a group — a folder of repositories, or an
+              empty one you fill by hand.
+            </div>
           )}
         </aside>
 
@@ -393,6 +348,32 @@ export default function App() {
           >
             ▲
           </button>
+        )}
+
+        {menu && (
+          <>
+            <div className="scrim" onClick={() => setMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMenu(null); }} />
+            <div className="menu" style={{ left: menu.x, top: menu.y }}>
+              <button
+                onClick={() => {
+                  const g = menu.group;
+                  setMenu(null);
+                  void addRepo(g);
+                }}
+              >
+                Add repository…
+              </button>
+              <button
+                className="danger"
+                onClick={() => {
+                  persist(groups.filter((x) => x.id !== menu.group.id));
+                  setMenu(null);
+                }}
+              >
+                Remove from pult
+              </button>
+            </div>
+          </>
         )}
 
         <main className="pane">

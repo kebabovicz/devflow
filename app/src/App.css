@@ -77,54 +77,8 @@ html, body, #root {
   padding-bottom: 24px;
 }
 
-.group { padding: 10px 0 4px; }
-.group h2 {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 12px 6px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-.branch { color: var(--faint); text-transform: none; letter-spacing: 0; }
 
-.attention h2 { color: var(--warn); }
 
-.effort { margin: 8px 12px 2px; color: var(--faint); }
-
-.row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "id why" "where where";
-  gap: 0 8px;
-  padding: 5px 12px;
-  border-left: 2px solid transparent;
-  cursor: default;
-}
-.row .id { grid-area: id; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .why { grid-area: why; color: var(--dim); }
-.row .where { grid-area: where; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.row.waiting { border-left-color: var(--warn); }
-.row.waiting .why { color: var(--warn); }
-
-.row.session { cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "dot id why" "dot where where"; }
-.row.session:hover { background: var(--raise); }
-.row.session.on { background: var(--raise); border-left-color: var(--accent); }
-.row.session.external { cursor: default; opacity: 0.55; }
-
-.dot {
-  grid-area: dot;
-  align-self: center;
-  width: 6px; height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--faint);
-}
-.dot.busy { background: var(--busy); }
-.dot.idle { background: var(--faint); }
 
 .empty { padding: 4px 12px; color: var(--faint); }
 .empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
@@ -203,77 +157,12 @@ html, body, #root {
 
 /* ── the tree ─────────────────────────────────────────────────────────────── */
 
-.group h2 .count {
-  color: var(--faint);
-  font-variant-numeric: tabular-nums;
-}
 
-.group h2 .twisty {
-  flex: 1;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: var(--dim);
-  cursor: pointer;
-}
-.group h2 .twisty:hover { color: var(--ink); }
 
-.group h2 .tiny {
-  width: 16px;
-  height: 16px;
-  margin-left: 2px;
-  background: none;
-  border: none;
-  border-radius: 3px;
-  color: var(--faint);
-  font: inherit;
-  line-height: 1;
-  cursor: pointer;
-}
-.group h2 .tiny:hover { color: var(--ink); background: var(--raise); }
 
 /* A repository heads its own block: name and the branch it stands on. */
-.repo {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 12px 2px;
-  color: var(--ink);
-}
-.repo .where { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.effort { cursor: pointer; }
-.effort:hover { color: var(--dim); }
 
-.row.ticket, .row.waiting { cursor: pointer; }
-.row.ticket:hover, .row.waiting:hover { background: var(--raise); }
-.row.ticket.on { background: var(--raise); border-left-color: var(--accent); }
-
-.tools {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: 8px 12px;
-  backdrop-filter: blur(12px);
-}
-
-.add {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 5px;
-  background: none;
-  border: 1px dashed var(--line);
-  border-radius: 6px;
-  color: var(--faint);
-  font: inherit;
-  cursor: pointer;
-}
-.add:hover { color: var(--ink); border-color: var(--dim); }
 
 /* ── reading a file ───────────────────────────────────────────────────────── */
 
@@ -427,3 +316,156 @@ html, body, #root {
 .load .limit.warning b { color: var(--warn); }
 .load .limit.critical .bar > span { background: #ff8b8b; }
 .load .limit.critical b { color: #ff8b8b; }
+
+
+/* ── the tree, to the design's own metrics ───────────────────────────────── */
+
+.tree { background: #0f1116; padding: 6px 0; }
+
+.node {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding-right: 8px;
+  cursor: default;
+}
+.node.leaf { height: 42px; }
+.node:hover { background: rgba(255, 255, 255, 0.04); }
+.node.on { background: rgba(255, 255, 255, 0.08); }
+.node.ticket, .node.session { cursor: pointer; }
+.node.session.external { cursor: default; opacity: 0.6; }
+
+/* Depth is drawn, not padded: the hairline has to run the row's full height. */
+.indent { position: relative; align-self: stretch; flex: none; }
+.indent .guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.twist {
+  flex: none;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+}
+.twist svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.mark {
+  flex: none;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mark svg { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.mark.dot { position: relative; }
+.mark.dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mark.working { color: #6fa8e6; }
+.mark.waiting { color: #ffd479; }
+.mark.done    { color: #7ec699; }
+.mark.idle    { color: var(--faint); }
+.mark.gone    { color: #e0776b; }
+
+.label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 8px 0 6px;
+}
+.label .name {
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label .note {
+  font-size: 11.5px;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.node.session .label .name { color: var(--faint); }
+.node.session.on .label .name { color: var(--ink); }
+
+.right { flex: none; display: flex; align-items: center; gap: 7px; }
+
+.count { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.count i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.count.waiting { color: #ffd479; }
+.count.working { color: #6fa8e6; }
+
+.flag.waiting { color: #ffd479; font-size: 11px; }
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b6b8c0;
+  font-size: 10px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.branch svg { flex: none; fill: none; stroke: var(--faint); stroke-width: 1.4; }
+.branch.no-engine { opacity: 0.55; }
+.nogit { color: var(--faint); font-size: 10px; }
+
+/* ── the header strip ─────────────────────────────────────────────────────── */
+
+.bar .tool {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--dim);
+  font: inherit;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.bar .tool:hover { color: var(--ink); border-color: var(--dim); }
+
+/* ── the context menu the design puts group work in ───────────────────────── */
+
+.scrim { position: fixed; inset: 0; z-index: 10; }
+.menu {
+  position: fixed;
+  z-index: 11;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1c1f26;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--ink);
+  font: inherit;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.menu button:hover { background: rgba(255, 255, 255, 0.08); }
+.menu button.danger { color: #e0776b; }
