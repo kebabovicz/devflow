@@ -101,6 +101,7 @@ The skills above are text a model reads and follows, which means they hold as we
 | `contract draft <id>` / `approve <id>` | Write what the ticket delivers and how it is checked; approve it. Work does not start on an unapproved contract, and a session never approves its own |
 | `ticket report <id> --commit <sha>` | The executor's mark: written, boxes ticked, here is the commit. Moves the ticket to `awaiting review` and drops the claim. Never writes `done` |
 | `ticket accept <id>` | The user's answer: looked at, and it is done. The only thing that writes `done`, and a session does not run it |
+| `ticket cancel <id> --reason <text>` | Drop a slice that turned out to be unnecessary, with the reason recorded in the ticket |
 | `question add <id>` / `answer <id>` / `drop <id>` | File a question into the ticket it concerns and block that ticket; settle it and restore the status the ticket had |
 | `session start <id>` | Claim the ticket and start a session on it with `claude --bg`, named after the ticket, within the project's `sessions.limit` |
 

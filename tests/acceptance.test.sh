@@ -207,6 +207,20 @@ ck_hdr "to blocked" Status blocked "$T/01-work.md"
 
 # ── a session does not accept its own work ──────────────────────────────────
 
+echo "── cancel: dropping a slice still has a legal path"
+setup
+ck_rc "a cancellation with no reason is a bad invocation" 1 ticket cancel 02-open
+ck "cancelling succeeds"  cancelled '.reason' ticket cancel 02-open --reason "folded into 01"
+ck_hdr "the status moves"  Status cancelled "$T/02-open.md"
+ck_grep "and the reason is written into the ticket" 'folded into 01' "$T/02-open.md"
+setup
+ck "finished work is history, not something to cancel" not_live '.reason' \
+  ticket cancel 04-closed --reason "nope"
+setup
+run ticket take 02-open --owner "session-a" >/dev/null 2>&1
+ck "a held ticket is released before it is dropped" still_held '.reason' \
+  ticket cancel 02-open --reason "nope"
+
 echo "── guard 7"
 gck() { # $1=desc $2=want-rc $3=command
   local rc

@@ -77,6 +77,12 @@ devflow — engine commands for devflow-managed repositories
       for itself. Refuses (code 3) when nothing has been reported, (code 4)
       when a session still holds the claim.
 
+  devflow ticket cancel <ref> --reason <text> [--json]
+      Drop a ticket that turned out to be unnecessary, recording why under a
+      `## Cancelled` section. The reason is required: a ticket dropped without
+      one reads as a forgotten one. Refuses (code 3) on finished work, (code 4)
+      while somebody holds the claim.
+
   devflow contract draft <ref> [--delivers <md|->] [--acceptance <md|->] [--json]
       Write the ticket's contract — what it delivers and how anyone will know it
       is done — and mark it a draft awaiting a person. Either flag reads stdin
@@ -889,6 +895,63 @@ cmd_ticket_report() {
        '{ticket: $id, path: $p, owner: $o, commit: $c, at: $at, status: "awaiting review"}')"
 }
 
+# Dropping a ticket is a scope decision, and it needs a legal path of its own:
+# with the state headers closed to hand-editing, a slice that turns out to be
+# unnecessary would otherwise have nowhere to go. The reason is required —
+# a cancelled ticket with no reason is indistinguishable from a forgotten one.
+cmd_ticket_cancel() {
+  local ref="" reason="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --reason) reason="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow ticket cancel: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow ticket cancel: which ticket?\n' >&2; return 1; }
+  [ -n "$reason" ] || {
+    printf 'devflow ticket cancel: --reason is required — a ticket dropped without one reads as forgotten\n' >&2
+    return 1
+  }
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local raw norm
+  raw=$(df_header "$file" "Status") || raw=""
+  norm=$(df_status_norm "$raw")
+  case "$norm" in
+    done)      ticket_result 3 not_live "$id is done — finished work is not cancelled, it is history" ;;
+    cancelled) ticket_result 3 not_live "$id was already cancelled" ;;
+  esac
+
+  local lock; lock=$(df_lock_dir "$file")
+  if [ -d "$lock" ]; then
+    local held; held=$(cat "$lock/owner" 2>/dev/null || echo unknown)
+    ticket_result 4 still_held \
+      "$id is claimed by $held — release it before dropping it" \
+      "$(jq -n --arg h "$held" '{holder: $h}')"
+  fi
+
+  local now tmp; now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  tmp=$(mktemp) || return 1
+  printf '%s\n' "$reason" > "$tmp"
+  df_section_replace "$file" "Cancelled" "$tmp" || true
+  rm -f "$tmp"
+
+  if ! df_set_header "$file" "Status" "cancelled"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+
+  ticket_result 0 cancelled "$id cancelled — $reason" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg r "$reason" --arg at "$now" --arg was "$norm" \
+       '{ticket: $id, path: $p, why: $r, at: $at, was: $was, status: "cancelled"}')"
+}
+
 cmd_ticket_accept() {
   local ref="" by="" json=0
   while [ $# -gt 0 ]; do
@@ -1230,6 +1293,7 @@ cmd_ticket() {
     release) shift; cmd_ticket_release "$@" ;;
     report) shift; cmd_ticket_report "$@" ;;
     accept) shift; cmd_ticket_accept "$@" ;;
+    cancel) shift; cmd_ticket_cancel "$@" ;;
     -h|--help|"") usage ;;
     *) printf 'devflow ticket: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
   esac
