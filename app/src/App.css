@@ -29,13 +29,17 @@ html, body, #root {
   color: var(--ink);
   font: 12px/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
+  /* The window does not scroll. Its panes do — a window that slides as a whole
+     leaves the header somewhere off the top and nothing to grab. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* One scrim for the whole window, so panes do not stack their own and end up
    at different opacities. */
 #root { background: var(--scrim); }
 
-.app { display: flex; flex-direction: column; height: 100%; }
+.app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 .bar {
   display: flex;
@@ -77,6 +81,7 @@ html, body, #root {
   background: rgba(0, 0, 0, 0.10);
   flex: none;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-bottom: 24px;
 }
 
@@ -178,7 +183,9 @@ html, body, #root {
 .terminal-host .xterm-screen { background: transparent; }
 /* A thin scrollbar rather than none: what is scrollable is worth showing, and
    a full-screen interface simply has nothing to scroll. */
+.terminal-host .xterm-viewport { overflow-y: scroll; }
 .terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
 .terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.14);
   border-radius: 4px;
