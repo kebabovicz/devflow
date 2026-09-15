@@ -135,4 +135,15 @@ if printf '%s' "$cmd" | grep -qE "$(git_cmd_re 'clean')[^|;&]*[[:space:]](-[A-Za
   exit 2
 fi
 
+# ── Guard 6: a session does not approve its own contract ────────────────────
+# A ticket's contract says what it delivers and how anyone will know it is done.
+# Approving it is the user's act — that is the whole meaning of the gate in
+# front of `ticket take`. A session may draft one and propose it; running the
+# approval for itself would make the agreement a formality it grants itself.
+# The prefix is what a user's explicit yes looks like at this layer.
+if printf '%s' "$cmd" | grep -qE '(^|[^[:alnum:]_.-])devflow[[:space:]]+contract[[:space:]]+approve([[:space:]]|$)'; then
+  echo "devflow guard: approving a contract is the user's act, not a session's. Put the drafted contract to the user and let them answer. If the user has said yes to this ticket, re-run prefixed with DEVFLOW_ALLOW=1." >&2
+  exit 2
+fi
+
 exit 0

@@ -92,6 +92,16 @@ check 0 "$ON_FEAT" "merge base into feature allowed"    "git merge main"
 check 2 "$ON_MAIN" "cherry-pick while on base blocked"  "git cherry-pick abc123"
 check 0 "$ON_MAIN" "pull on base allowed (sanctioned base update)" "git pull"
 
+echo "guard: a session does not approve its own contract"
+check 2 "$ON_FEAT" "contract approve blocked"            "devflow contract approve 01-thing"
+check 2 "$ON_FEAT" "blocked with a path in front"        "./bin/devflow contract approve 01"
+check 2 "$ON_FEAT" "blocked with extra flags"            "devflow contract approve 01 --by me"
+check 0 "$ON_FEAT" "DEVFLOW_ALLOW=1 approve allowed"     "DEVFLOW_ALLOW=1 devflow contract approve 01"
+check 0 "$ON_FEAT" "drafting a contract is the session's job" "devflow contract draft 01 --delivers x"
+check 0 "$ON_FEAT" "taking a ticket is untouched"        "devflow ticket take 01"
+check 0 "$ON_FEAT" "reading status is untouched"         "devflow status --json"
+check 0 "$PLAIN"   "outside a devflow project, nothing" "devflow contract approve 01"
+
 echo
 echo "guard.test.sh: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

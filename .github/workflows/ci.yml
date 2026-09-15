@@ -12,7 +12,7 @@ jobs:
       - name: shellcheck
         # -S warning: install.sh's `check && ok || warn` one-liners are safe
         # (ok/warn are printf) but trip info-level SC2015.
-        run: shellcheck -S warning hooks/*.sh install.sh tests/*.sh
+        run: shellcheck -S warning hooks/*.sh install.sh tests/*.sh lib/*.sh bin/devflow
       - name: pyyaml for the template-parse lint
         run: pip install --quiet pyyaml
       - name: hook regression suite + plugin lint

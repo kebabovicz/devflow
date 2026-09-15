@@ -9,6 +9,15 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/ticket-guard.sh\""
+          }
+        ]
       }
     ],
     "Stop": [

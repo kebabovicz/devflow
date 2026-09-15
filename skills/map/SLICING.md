@@ -2,6 +2,10 @@
 
 The map's last act: turn the spec and the design into work someone can take.
 
+**The engine CLI, written `devflow` below, ships with the plugin as `bin/devflow` in its root — the directory `${CLAUDE_SKILL_DIR}/../..` points at. It is not on PATH; invoke it by that path.**
+
+**`map.md` writes the work branch in backticks** — ``Ветка работы — `feature/ABC-42` ``. The stop gate and the ticket gate both find the effort that belongs to a working tree by reading that name out of the map, and the ticket gate only accepts the backticked form: a bare word in prose is not a branch reference.
+
 ## `tickets/NN-slug.md`
 
 Numbered from `01` in dependency order — blockers first.
@@ -10,7 +14,8 @@ Numbered from `01` in dependency order — blockers first.
 # NN — <ticket title>
 
 Blocked by: 02, 03        <!-- or: none — can start immediately -->
-Status: open | in progress | awaiting review | done
+Status: open | in progress | awaiting review | done | blocked
+Contract: draft           <!-- approved by a person before work starts -->
 Tracker: ABC-42           <!-- added only after an approved publish -->
 
 ## What it delivers
@@ -33,8 +38,28 @@ consistency" on their own, and the reviewer must not read it as a slip.>
 ## Open questions
 
 <empty in a freshly cut ticket. Filled later, by whoever implements an
-EARLIER ticket and finds something that changes this one. One line each,
-naming where it came from and what it may change:
+EARLIER ticket and finds something that changes this one.
+
+Write entries with `devflow question add <ticket> --text -` rather than by
+hand: it blocks the ticket, records the status to restore, and numbers the
+entry. One block per question, its state on the heading:
+
+### Q1 · open · asked 2026-09-14T17:00:00Z · was: open
+
+**One bold sentence saying what is needed.** Then the options, numbered, each
+with what it costs. Then the proposal.
+
+### Q2 · answered 2026-09-14T18:10:00Z · asked 2026-09-14T17:30:00Z
+
+the question, as it was asked
+
+**Answer:**
+
+what was decided
+
+Settled entries stay — the trail of what was decided is why they are kept —
+and stop blocking the ticket. The older one-line form still reads as an open
+question, so tickets cut before this existed keep working:
 
 - from 02, while implementing: the session token is issued per device, so
   the user endpoints may need a device id in the path — decide before this
@@ -53,9 +78,21 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 
 **An unanswered question makes the ticket un-takeable**: `/devflow:build` marks it `Status: blocked` and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
 
+## The contract
+
+*What it delivers* and *Acceptance* together are the ticket's contract: what will be true when this is finished, and how anyone tells. They are not a separate document — the ticket already carries both. The `Contract:` header says only whether a person has agreed to what they say.
+
+`draft` — written, waiting on the user. `approved <iso> by <who>` — agreed, and the ticket can be taken. A ticket that fills neither section has no contract at all, and `devflow ticket take` refuses it: nobody could say when it was done.
+
+**Approving is the user's act.** A session drafts and proposes — `devflow contract draft <ticket> --delivers - --acceptance -` — then stops. It never runs `devflow contract approve` for itself. Editing an approved contract returns it to `draft`, because what was agreed is no longer what the ticket says.
+
+Tickets cut before this header existed carry no `Contract:` line. Both their sections are filled and the slicing they came from was reviewed, so they stay takeable; anything reading them sees the state `legacy`, which is the truth — reviewed once, but not by this gate.
+
 ## Statuses
 
-`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked.
+`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked. `blocked` — an unanswered question or a gap in the design stopped it; the loop set this and moved on.
+
+**Write the canonical value, accept its synonyms when reading.** Tickets in the wild carry `todo` for `open` and `awaiting` for `awaiting review` — a ticket written before this list settled, or by hand. Anything reading a ticket treats those as the same state; anything writing one writes the canonical word above. A status outside this list is shown as-is and never silently reinterpreted: an unknown word is a ticket to look at, not a ticket to skip.
 
 ## Vertical slices
 
