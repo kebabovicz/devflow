@@ -26,7 +26,7 @@ setup() { # rebuilt before each group so one test never leaks into the next
 
   mk 01-ready   open  none
   mk 02-blocked open  "01"
-  mk 03-done    done  none
+  mk 03-done    "done"  none
   mk 04-todo    todo  none
   mk 05-blocked-by-done open "03"
 

@@ -46,7 +46,7 @@ ${4:-}
 TICKET
 }
 
-mk_ticket "$FULL/.devflow/maps/alpha/tickets/01-a.md" done none
+mk_ticket "$FULL/.devflow/maps/alpha/tickets/01-a.md" "done" none
 mk_ticket "$FULL/.devflow/maps/alpha/tickets/02-b.md" todo none
 mk_ticket "$FULL/.devflow/maps/alpha/tickets/03-c.md" cancelled "01, 02"
 mk_ticket "$FULL/.devflow/maps/alpha/tickets/04-d.md" "in progress" "01"

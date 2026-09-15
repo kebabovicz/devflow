@@ -94,7 +94,7 @@ ck "editing the manifest is never blocked" 0 "$REPO/.devflow/project.yml"
 
 echo "── scope"
 setup work
-mk 01-done done
+mk 01-done "done"
 mk 02-cancelled cancelled
 ck "a finished effort gates nothing" 0 "$REPO/src/app.ts"
 

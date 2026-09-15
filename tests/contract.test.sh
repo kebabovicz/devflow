@@ -44,7 +44,7 @@ Status: open
 
 ## Open questions
 X
-  mk_full 04-done done
+  mk_full 04-done "done"
 }
 
 mk_full() { # $1=name $2=status

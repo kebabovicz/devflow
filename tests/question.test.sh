@@ -25,7 +25,7 @@ setup() {
   git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init 2>/dev/null
   printf 'maps:\n  dir: .devflow/maps\n' > "$REPO/.devflow/project.yml"
   mk 01-open open
-  mk 02-done done
+  mk 02-done "done"
   mk 03-prog "in progress"
   # A ticket cut before questions had commands: the old one-line bullet form.
   cat > "$T/04-legacy.md" <<'X'
