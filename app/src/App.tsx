@@ -74,6 +74,18 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem("devflow.treeCollapsed") === "1",
   );
+  // The fold takes 220ms; the pane is told to hold still for a shade longer so
+  // it fits once, against the size the layout actually settled at.
+  const [settling, setSettling] = useState(false);
+  const fold = useCallback(() => {
+    setSettling(true);
+    setCollapsed((was) => {
+      const next = !was;
+      localStorage.setItem("devflow.treeCollapsed", next ? "1" : "0");
+      return next;
+    });
+    window.setTimeout(() => setSettling(false), 260);
+  }, []);
   const [adding, setAdding] = useState<null | { to: Group | null }>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; group: Group } | null>(null);
   const [load, setLoad] = useState<Load | null>(null);
@@ -316,11 +328,7 @@ export default function App() {
           className="fold"
           title={collapsed ? "Show the projects" : "Hide the projects"}
           aria-pressed={collapsed}
-          onClick={() => {
-            const next = !collapsed;
-            setCollapsed(next);
-            localStorage.setItem("devflow.treeCollapsed", next ? "1" : "0");
-          }}
+          onClick={fold}
         >
           <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
             <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
@@ -458,6 +466,7 @@ export default function App() {
                 session={showing.session.id}
                 onPane={setPane}
                 onError={setError}
+                settling={settling}
               />
             </>
           ) : showing?.kind === "file" ? (

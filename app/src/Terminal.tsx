@@ -32,12 +32,20 @@ export function TerminalPane({
   session,
   onPane,
   onError,
+  settling = false,
 }: {
   session: string;
   onPane: (pane: number | null) => void;
   onError: (message: string) => void;
+  /// True while the layout around the pane is animating. The terminal holds
+  /// its size for the duration: every column count sent to the session makes
+  /// the program on the other end rewrap and repaint everything it is drawing,
+  /// and doing that once per frame of a fold is the jitter you see.
+  settling?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const settle = useRef<null | (() => void)>(null);
+  const freeze = useRef<null | (() => void)>(null);
 
   useEffect(() => {
     const element = host.current;
@@ -46,6 +54,7 @@ export function TerminalPane({
     let disposed = false;
     let sent = { rows: 0, cols: 0 };
     let fitting = false;
+    let frozen = false;
     let pending: number | undefined;
     const unlisten: Array<() => void> = [];
 
@@ -93,7 +102,7 @@ export function TerminalPane({
     // `fitting` flag is what breaks the loop: everything the fit does to the
     // DOM lands while the observer is ignoring itself.
     const sync = (): boolean => {
-      if (fitting || disposed) return false;
+      if (fitting || disposed || frozen) return false;
       if (element.clientWidth < 8 || element.clientHeight < 8) return false;
       fitting = true;
       try {
@@ -167,12 +176,25 @@ export function TerminalPane({
       }
     })();
 
+    // The pane hands this back so a fold can stop and then restart the fitting
+    // without either component knowing how the other works.
+    settle.current = () => {
+      frozen = false;
+      scheduleSync();
+    };
+    freeze.current = () => {
+      frozen = true;
+      window.clearTimeout(pending);
+    };
+
     const observer = new ResizeObserver(scheduleSync);
     observer.observe(element);
     window.addEventListener("resize", scheduleSync);
 
     return () => {
       disposed = true;
+      settle.current = null;
+      freeze.current = null;
       window.clearTimeout(pending);
       window.removeEventListener("resize", scheduleSync);
       observer.disconnect();
@@ -182,6 +204,12 @@ export function TerminalPane({
       term.dispose();
     };
   }, [session]);
+
+  // Frozen while the fold runs, fitted once when it has finished.
+  useEffect(() => {
+    if (settling) freeze.current?.();
+    else settle.current?.();
+  }, [settling]);
 
   // The padding lives on the wrapper, never on the element the fit addon
   // measures: it reads that element's box as available space, so padding there
