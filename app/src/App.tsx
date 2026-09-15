@@ -6,7 +6,7 @@
 // belong to. A window that lists everything equally is the flat list this one
 // exists to replace.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   claudeAgents,
@@ -59,6 +59,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [showing, setShowing] = useState<Showing>(null);
   const [, setPane] = useState<number | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const tree = useRef<HTMLDivElement>(null);
 
   // ── what is watched ───────────────────────────────────────────────────────
 
@@ -178,7 +180,19 @@ export default function App() {
       )}
 
       <div className="body">
-        <aside className="tree">
+        <aside
+          className="tree"
+          ref={tree}
+          onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 120)}
+        >
+          {/* Working on the tree belongs at its top: that is where the eye
+              starts, and it is the one place a long list cannot push away. */}
+          <div className="tools">
+            <button className="add" onClick={() => void addGroup()}>
+              + group
+            </button>
+          </div>
+
           {attention.length > 0 && (
             <section className="group attention">
               <h2>
@@ -300,10 +314,17 @@ export default function App() {
             </section>
           ))}
 
-          <button className="add" onClick={() => void addGroup()}>
-            + group
-          </button>
         </aside>
+
+        {scrolled && (
+          <button
+            className="to-top"
+            title="Back to the top"
+            onClick={() => tree.current?.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            ▲
+          </button>
+        )}
 
         <main className="pane">
           {showing?.kind === "session" ? (

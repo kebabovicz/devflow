@@ -25,6 +25,8 @@
 html, body, #root {
   height: 100%;
   margin: 0;
+  user-select: none;
+  -webkit-user-select: none;
   background: transparent;
   color: var(--ink);
   font: 12px/1.5 var(--font);
@@ -46,9 +48,10 @@ html, body, #root {
   align-items: center;
   gap: 12px;
   padding: 8px 12px 8px 84px; /* room for the traffic lights */
-  border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
+/* Buttons inside a draggable strip have to opt out, or they cannot be pressed. */
+.bar button { -webkit-app-region: no-drag; }
 
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
 
@@ -183,7 +186,7 @@ html, body, #root {
 }
 /* Nothing on this element but size: the fit addon measures it, and every pixel
    of padding here becomes a row the window cannot show. */
-.terminal-host { height: 100%; width: 100%; }
+.terminal-host { height: 100%; width: 100%; user-select: text; -webkit-user-select: text; }
 .terminal-host .xterm { height: 100%; width: 100%; }
 .terminal-host .xterm-viewport { background: transparent !important; }
 .terminal-host .xterm-screen { background: transparent; }
@@ -250,10 +253,18 @@ html, body, #root {
 .row.ticket:hover, .row.waiting:hover { background: var(--raise); }
 .row.ticket.on { background: var(--raise); border-left-color: var(--accent); }
 
+.tools {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 12px;
+  backdrop-filter: blur(12px);
+}
+
 .add {
   display: block;
-  width: calc(100% - 24px);
-  margin: 10px 12px 0;
+  width: 100%;
+  margin: 0;
   padding: 5px;
   background: none;
   border: 1px dashed var(--line);
@@ -289,6 +300,8 @@ html, body, #root {
 .views button.on { background: var(--raise); color: var(--ink); }
 
 .doc {
+  user-select: text;
+  -webkit-user-select: text;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -345,3 +358,23 @@ html, body, #root {
   font-variant-numeric: tabular-nums;
 }
 .doc.raw .src { white-space: pre-wrap; word-break: break-word; }
+
+
+/* A long tree scrolls past its own controls; this brings them back. */
+.to-top {
+  position: absolute;
+  left: 292px;
+  bottom: 16px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.to-top:hover { color: var(--ink); border-color: var(--dim); }
+
+.body { position: relative; }
