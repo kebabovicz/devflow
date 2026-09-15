@@ -3,7 +3,7 @@
 // waiting on a person, ahead of everything that is merely in flight.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { discoverRepos, engineStatus, type Repo, type Session, type Status, type Ticket } from "./engine";
+import { claudeAgents, discoverRepos, engineStatus, type Repo, type Session, type Status, type Ticket } from "./engine";
 import { TerminalPane } from "./Terminal";
 import "./App.css";
 
@@ -32,11 +32,22 @@ export default function App() {
   const [draftFolder, setDraftFolder] = useState(folder);
   const [status, setStatus] = useState<Status | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [selected, setSelected] = useState<Session | null>(null);
   const [, setPane] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!folder) return;
+    // Sessions first and unconditionally: they are what the window is opened
+    // for, and they exist whether or not a folder has been chosen yet.
+    try {
+      setSessions(await claudeAgents());
+    } catch (e) {
+      setError(String(e));
+    }
+    if (!folder) {
+      setStatus(null);
+      return;
+    }
     try {
       const repos = await discoverRepos(folder);
       const next = await engineStatus(repos);
@@ -53,13 +64,13 @@ export default function App() {
     return () => clearInterval(t);
   }, [refresh]);
 
-  const sessions = useMemo(() => {
-    const seen = new Map<string, Session>();
-    for (const r of status?.repos ?? []) {
-      for (const s of r.sessions) if (s.live) seen.set(s.session_id, s);
-    }
-    return [...seen.values()].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
-  }, [status]);
+  const live = useMemo(
+    () =>
+      sessions
+        .filter((s) => s.live)
+        .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id)),
+    [sessions],
+  );
 
   const attention = useMemo(() => {
     const out: Array<{ repo: Repo; ticket: Ticket; why: string }> = [];
@@ -113,9 +124,9 @@ export default function App() {
           )}
 
           <section className="group">
-            <h2>Sessions</h2>
-            {sessions.length === 0 && <div className="empty">none running</div>}
-            {sessions.map((s) => {
+            <h2>Sessions<span className="branch">{live.length || ""}</span></h2>
+            {live.length === 0 && <div className="empty">none running</div>}
+            {live.map((s) => {
               const attachable = s.kind === "background";
               return (
                 <div

@@ -1,15 +1,18 @@
-/* The window is translucent: the system paints its material behind the page, so
-   everything here is layered on top of it and no surface is fully opaque. */
+/* The window is translucent, and translucency alone is not a background.
+   The system blurs what is behind the window; this scrim sits on top of that
+   blur and is what text is actually read against. Without it the desktop
+   competes with every line of the interface and wins. */
 
 :root {
-  --ink: #e8e8ea;
-  --dim: #9a9aa2;
-  --faint: #6e6e78;
-  --line: rgba(255, 255, 255, 0.08);
-  --raise: rgba(255, 255, 255, 0.05);
-  --accent: #7fb3ff;
-  --warn: #ffcc66;
-  --busy: #7ee787;
+  --scrim: rgba(22, 24, 30, 0.82);
+  --ink: #f2f3f5;
+  --dim: #b6b8c0;
+  --faint: #8b8d97;
+  --line: rgba(255, 255, 255, 0.10);
+  --raise: rgba(255, 255, 255, 0.07);
+  --accent: #8cc0ff;
+  --warn: #ffd479;
+  --busy: #8ef0a2;
   --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
@@ -23,6 +26,10 @@ html, body, #root {
   font: 12px/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
 }
+
+/* One scrim for the whole window, so panes do not stack their own and end up
+   at different opacities. */
+#root { background: var(--scrim); }
 
 .app { display: flex; flex-direction: column; height: 100%; }
 
@@ -53,7 +60,7 @@ html, body, #root {
 
 .error {
   padding: 6px 12px;
-  background: rgba(255, 90, 90, 0.12);
+  background: rgba(120, 30, 30, 0.55);
   border-bottom: 1px solid var(--line);
   color: #ff9c9c;
   white-space: pre-wrap;
@@ -63,6 +70,7 @@ html, body, #root {
 
 .tree {
   width: 340px;
+  background: rgba(0, 0, 0, 0.16);
   flex: none;
   overflow-y: auto;
   border-right: 1px solid var(--line);
@@ -145,3 +153,4 @@ html, body, #root {
 .terminal-host { flex: 1; min-height: 0; padding: 6px 0 0 8px; }
 .terminal-host .xterm { height: 100%; }
 .terminal-host .xterm-viewport { background: transparent !important; }
+.terminal-host .xterm-screen { background: transparent; }
