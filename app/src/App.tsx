@@ -71,6 +71,9 @@ export default function App() {
   const [closedDirs, setClosedDirs] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState("");
   const [home, setHome] = useState("");
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("devflow.treeCollapsed") === "1",
+  );
   const [adding, setAdding] = useState<null | { to: Group | null }>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; group: Group } | null>(null);
   const [load, setLoad] = useState<Load | null>(null);
@@ -309,6 +312,21 @@ export default function App() {
   return (
     <div className="app">
       <header className="bar" data-tauri-drag-region>
+        <button
+          className="fold"
+          title={collapsed ? "Show the projects" : "Hide the projects"}
+          aria-pressed={collapsed}
+          onClick={() => {
+            const next = !collapsed;
+            setCollapsed(next);
+            localStorage.setItem("devflow.treeCollapsed", next ? "1" : "0");
+          }}
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
+            <path d="M6.5 2.5 V13.5" />
+          </svg>
+        </button>
         <span className="brand" data-tauri-drag-region>devflow</span>
         <span className="spacer" data-tauri-drag-region />
         <span className="generated" data-tauri-drag-region>
@@ -323,7 +341,7 @@ export default function App() {
       )}
 
       <div className="body">
-        <aside className="aside">
+        <aside className={`aside ${collapsed ? "folded" : ""}`}>
           <AsideHead
             filter={filter}
             onFilter={setFilter}
@@ -382,12 +400,6 @@ export default function App() {
             />
           ))}
 
-            {groups.length === 0 && (
-              <div className="empty hint">
-                Nothing is being watched yet. Add a group — a folder of repositories, or
-                an empty one you fill by hand.
-              </div>
-            )}
           </div>
 
           {/* Kept mounted so it can fade both ways, and out of the flow so the
@@ -457,12 +469,7 @@ export default function App() {
               </div>
               <DocumentPane key={showing.path} path={showing.path} onError={setError} />
             </>
-          ) : (
-            <div className="empty hint">
-              Pick a session to open its terminal, or a ticket to read it. Sessions started
-              outside this window are listed but cannot be attached.
-            </div>
-          )}
+          ) : null}
         </main>
       </div>
 

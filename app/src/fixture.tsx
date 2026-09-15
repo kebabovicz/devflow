@@ -84,6 +84,12 @@ function Fixture() {
       style={{ backgroundImage: "linear-gradient(135deg,#2f5b86,#13263a 55%,#28506e)" }}
     >
       <header className="bar">
+        <button className="fold" title="Hide the projects">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="2" />
+            <path d="M6.5 2.5 V13.5" />
+          </svg>
+        </button>
         <span className="brand">devflow</span>
         <span className="spacer" />
         <span className="generated">12:55:04</span>

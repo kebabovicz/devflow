@@ -60,7 +60,7 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 12px 8px 84px; /* room for the traffic lights */
+  padding: 8px 12px 8px 78px; /* room for the traffic lights */
 }
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
 .spacer { flex: 1; }
@@ -86,7 +86,40 @@ html, body, #root {
   flex-direction: column;
   min-height: 0;
   background: var(--column);
+  /* Folding animates the width, and the content is clipped rather than
+     reflowed: rows rearranging themselves on the way out is not a fold, it is
+     a redraw that happens to end at zero. */
+  overflow: hidden;
+  transition: width 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
+.aside > * { min-width: 340px; }
+.aside.folded { width: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .aside { transition: none; }
+}
+
+/* The fold sits where macOS puts it: left of the title, beside the lights. */
+.bar .fold {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bar .fold:hover { color: var(--ink); background: var(--raise); }
+.bar .fold svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.bar .fold[aria-pressed="true"] { color: var(--dim); }
 
 .aside-head { flex: none; }
 .aside-head .title {
