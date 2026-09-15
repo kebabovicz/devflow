@@ -1,0 +1,147 @@
+/* The window is translucent: the system paints its material behind the page, so
+   everything here is layered on top of it and no surface is fully opaque. */
+
+:root {
+  --ink: #e8e8ea;
+  --dim: #9a9aa2;
+  --faint: #6e6e78;
+  --line: rgba(255, 255, 255, 0.08);
+  --raise: rgba(255, 255, 255, 0.05);
+  --accent: #7fb3ff;
+  --warn: #ffcc66;
+  --busy: #7ee787;
+  --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 12px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 8px 84px; /* room for the traffic lights */
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: drag;
+}
+
+.brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
+
+.folder {
+  flex: 1;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+  padding: 4px 8px;
+  -webkit-app-region: no-drag;
+}
+.folder:focus { outline: none; border-color: var(--accent); }
+
+.generated { color: var(--faint); }
+
+.error {
+  padding: 6px 12px;
+  background: rgba(255, 90, 90, 0.12);
+  border-bottom: 1px solid var(--line);
+  color: #ff9c9c;
+  white-space: pre-wrap;
+}
+
+.body { display: flex; flex: 1; min-height: 0; }
+
+.tree {
+  width: 340px;
+  flex: none;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  padding-bottom: 24px;
+}
+
+.group { padding: 10px 0 4px; }
+.group h2 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 12px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.branch { color: var(--faint); text-transform: none; letter-spacing: 0; }
+
+.attention h2 { color: var(--warn); }
+
+.effort { margin: 8px 12px 2px; color: var(--faint); }
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "id why" "where where";
+  gap: 0 8px;
+  padding: 5px 12px;
+  border-left: 2px solid transparent;
+  cursor: default;
+}
+.row .id { grid-area: id; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .why { grid-area: why; color: var(--dim); }
+.row .where { grid-area: where; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.row.waiting { border-left-color: var(--warn); }
+.row.waiting .why { color: var(--warn); }
+
+.row.session { cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "dot id why" "dot where where"; }
+.row.session:hover { background: var(--raise); }
+.row.session.on { background: var(--raise); border-left-color: var(--accent); }
+.row.session.external { cursor: default; opacity: 0.55; }
+
+.dot {
+  grid-area: dot;
+  align-self: center;
+  width: 6px; height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.dot.busy { background: var(--busy); }
+.dot.idle { background: var(--faint); }
+
+.empty { padding: 4px 12px; color: var(--faint); }
+.empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
+
+.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.pane-head .where { flex: 1; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pane-head button {
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--dim);
+  font: inherit;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.pane-head button:hover { color: var(--ink); }
+
+.terminal-host { flex: 1; min-height: 0; padding: 6px 0 0 8px; }
+.terminal-host .xterm { height: 100%; }
+.terminal-host .xterm-viewport { background: transparent !important; }

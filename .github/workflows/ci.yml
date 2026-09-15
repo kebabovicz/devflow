@@ -19,3 +19,22 @@ jobs:
         run: bash tests/run.sh
       - name: plugin manifests are valid JSON
         run: jq -e . .claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json > /dev/null
+
+  app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: frontend type-check and build
+        working-directory: app
+        run: npm ci && npm run build
+      - name: rust check
+        # `cargo check` rather than a full bundle: it catches every type and
+        # borrow error in the part we write, in a fraction of the time a signed
+        # .app takes to produce.
+        working-directory: app/src-tauri
+        run: cargo check --locked
