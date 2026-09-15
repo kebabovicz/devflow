@@ -14,7 +14,7 @@
 :root {
   --scrim: rgba(20, 22, 28, 0.42);
   --card: #15171d;
-  --column: #0f1116;
+  --column: rgba(0, 0, 0, 0.20);
   --ink: #f2f3f5;
   --dim: #b6b8c0;
   --faint: #8b8d97;
@@ -58,9 +58,7 @@ html, body, #root {
   align-items: center;
   gap: 12px;
   padding: 8px 12px 8px 84px; /* room for the traffic lights */
-  -webkit-app-region: drag;
 }
-.bar button { -webkit-app-region: no-drag; }
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
 .spacer { flex: 1; }
 .generated { color: var(--faint); }

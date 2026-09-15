@@ -290,10 +290,10 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="bar">
-        <span className="brand">devflow</span>
-        <span className="spacer" />
-        <span className="generated">
+      <header className="bar" data-tauri-drag-region>
+        <span className="brand" data-tauri-drag-region>devflow</span>
+        <span className="spacer" data-tauri-drag-region />
+        <span className="generated" data-tauri-drag-region>
           {status ? new Date(status.generated_at).toLocaleTimeString() : ""}
         </span>
       </header>
