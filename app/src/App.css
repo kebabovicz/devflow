@@ -1,22 +1,31 @@
-/* Two surfaces, and the difference between them is the whole look.
-   The window itself stays translucent — the system's blur shows through the
-   chrome and the sidebar, where the text is short labels a light scrim carries.
-   The terminal does not: it is dense text that has to be read for minutes at a
-   time, so it sits on a solid card inset from the window, the way a document
-   does in an editor. Translucency behind a wall of monospace is a wall of
-   monospace you cannot read. */
+/* The window.
+ *
+ * Two surfaces, and the difference between them is the whole look. The window
+ * itself stays translucent — the chrome and the project column, where the text
+ * is short labels a light scrim carries. The reading panes do not: dense text
+ * read for minutes sits on a solid card inset from the window, the way a
+ * document does in an editor.
+ *
+ * Sizes and colours in the tree and in the column's head and foot are taken
+ * from the design file rather than chosen here. Where a number looks arbitrary
+ * it is because it is the design's.
+ */
 
 :root {
   --scrim: rgba(20, 22, 28, 0.42);
   --card: #15171d;
+  --column: #0f1116;
   --ink: #f2f3f5;
   --dim: #b6b8c0;
   --faint: #8b8d97;
   --line: rgba(255, 255, 255, 0.10);
   --raise: rgba(255, 255, 255, 0.07);
+  --guide: rgba(255, 255, 255, 0.07);
   --accent: #8cc0ff;
-  --warn: #ffd479;
-  --busy: #8ef0a2;
+  --working: #6fa8e6;
+  --waiting: #ffd479;
+  --done: #7ec699;
+  --bad: #e0776b;
   --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
@@ -25,23 +34,24 @@
 html, body, #root {
   height: 100%;
   margin: 0;
-  user-select: none;
-  -webkit-user-select: none;
   background: transparent;
   color: var(--ink);
   font: 12px/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
-  /* The window does not scroll. Its panes do — a window that slides as a whole
-     leaves the header somewhere off the top and nothing to grab. */
+  /* Nothing in the chrome is text to select: selection swallows the window
+     drag, and then the title bar cannot be grabbed. */
+  user-select: none;
+  -webkit-user-select: none;
+  /* The window does not scroll. Its panes do. */
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-/* One scrim for the whole window, so panes do not stack their own and end up
-   at different opacities. */
 #root { background: var(--scrim); }
 
 .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+/* ── the window's own bar ─────────────────────────────────────────────────── */
 
 .bar {
   display: flex;
@@ -50,11 +60,8 @@ html, body, #root {
   padding: 8px 12px 8px 84px; /* room for the traffic lights */
   -webkit-app-region: drag;
 }
-/* Buttons inside a draggable strip have to opt out, or they cannot be pressed. */
 .bar button { -webkit-app-region: no-drag; }
-
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
-
 .spacer { flex: 1; }
 .generated { color: var(--faint); }
 
@@ -67,336 +74,9 @@ html, body, #root {
   white-space: pre-wrap;
 }
 
-.body { display: flex; flex: 1; min-height: 0; }
+.body { position: relative; display: flex; flex: 1; min-height: 0; }
 
-
-
-
-
-.empty { padding: 4px 12px; color: var(--faint); }
-.empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
-
-.pane {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  margin: 8px 8px 8px 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  overflow: hidden;
-}
-
-.pane-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--line);
-}
-.pane-head .where { flex: 1; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A close affordance should be quiet: it is not the thing to reach for, and a
-   framed button reads as one. Grey until pointed at. */
-.pane-head .close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  color: var(--faint);
-  cursor: pointer;
-}
-.pane-head .close svg {
-  stroke: currentColor;
-  stroke-width: 1.25;
-  stroke-linecap: round;
-  fill: none;
-}
-.pane-head .close:hover { color: #ffffff; }
-.pane-head .close:active { color: var(--dim); }
-.pane-head .close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
-
-/* The pane clips; the terminal sizes itself to what is left. Padding lives on
-   this element because that is what the fit addon measures, so the rows it
-   computes are the rows that actually fit. */
-.terminal-pad {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  padding: 8px 4px 8px 10px;
-  overflow: hidden;
-}
-/* Nothing on this element but size: the fit addon measures it, and every pixel
-   of padding here becomes a row the window cannot show. */
-.terminal-host { height: 100%; width: 100%; user-select: text; -webkit-user-select: text; }
-.terminal-host .xterm { height: 100%; width: 100%; }
-.terminal-host .xterm-viewport { background: transparent !important; }
-.terminal-host .xterm-screen { background: transparent; }
-/* A thin scrollbar rather than none: what is scrollable is worth showing, and
-   a full-screen interface simply has nothing to scroll. */
-.terminal-host .xterm-viewport { overflow-y: scroll; }
-.terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
-.terminal-host .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
-.terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
-  border-radius: 4px;
-}
-
-
-/* ── the tree ─────────────────────────────────────────────────────────────── */
-
-
-
-
-/* A repository heads its own block: name and the branch it stands on. */
-
-
-
-/* ── reading a file ───────────────────────────────────────────────────────── */
-
-.doc-head {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 10px 0;
-}
-.views {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.views button {
-  background: none;
-  border: none;
-  color: var(--faint);
-  font: inherit;
-  padding: 3px 10px;
-  cursor: pointer;
-}
-.views button:hover { color: var(--ink); }
-.views button.on { background: var(--raise); color: var(--ink); }
-
-.doc {
-  user-select: text;
-  -webkit-user-select: text;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 4px 28px 32px;
-}
-
-.doc.rendered {
-  font: 13px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  max-width: 78ch;
-}
-.doc.rendered h1 { font-size: 22px; margin: 18px 0 10px; }
-.doc.rendered h2 { font-size: 17px; margin: 22px 0 8px; }
-.doc.rendered h3 { font-size: 14px; margin: 18px 0 6px; color: var(--dim); }
-.doc.rendered p, .doc.rendered li { color: var(--ink); }
-.doc.rendered a { color: var(--accent); }
-.doc.rendered code {
-  font: 12px/1.5 var(--font);
-  background: var(--raise);
-  border-radius: 3px;
-  padding: 1px 4px;
-}
-.doc.rendered pre {
-  background: rgba(0, 0, 0, 0.30);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 10px 12px;
-  overflow-x: auto;
-}
-.doc.rendered pre code { background: none; padding: 0; }
-.doc.rendered blockquote {
-  margin: 12px 0;
-  padding-left: 12px;
-  border-left: 2px solid var(--line);
-  color: var(--dim);
-}
-.doc.rendered table { border-collapse: collapse; }
-.doc.rendered th, .doc.rendered td {
-  border: 1px solid var(--line);
-  padding: 4px 8px;
-  text-align: left;
-}
-.doc.rendered hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
-.doc.rendered input[type="checkbox"] { margin-right: 6px; }
-
-.doc.raw { font: 12px/1.55 var(--font); padding-left: 10px; }
-.doc.raw table { border-collapse: collapse; width: 100%; }
-.doc.raw .ln {
-  width: 1%;
-  padding-right: 14px;
-  text-align: right;
-  color: var(--faint);
-  user-select: none;
-  vertical-align: top;
-  font-variant-numeric: tabular-nums;
-}
-.doc.raw .src { white-space: pre-wrap; word-break: break-word; }
-
-
-/* A long tree scrolls past its own controls; this brings them back. */
-.to-top {
-  position: absolute;
-  left: 292px;
-  bottom: 16px;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--card);
-  color: var(--dim);
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
-}
-.to-top:hover { color: var(--ink); border-color: var(--dim); }
-
-.body { position: relative; }
-
-
-/* ── the tree, to the design's own metrics ───────────────────────────────── */
-
-.node.leaf { height: 42px; }
-.node:hover { background: rgba(255, 255, 255, 0.04); }
-.node.on { background: rgba(255, 255, 255, 0.08); }
-.node.ticket, .node.session { cursor: pointer; }
-.node.session.external { cursor: default; opacity: 0.6; }
-
-/* Depth is drawn, not padded: the hairline has to run the row's full height. */
-.indent { position: relative; align-self: stretch; flex: none; }
-.indent .guide {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.twist {
-  flex: none;
-  width: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--faint);
-}
-.twist svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-
-.mark {
-  flex: none;
-  width: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mark svg { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
-.mark.dot { position: relative; }
-.mark.dot::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.mark.working { color: #6fa8e6; }
-.mark.waiting { color: #ffd479; }
-.mark.done    { color: #7ec699; }
-.mark.idle    { color: var(--faint); }
-.mark.gone    { color: #e0776b; }
-
-.label {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 0 8px 0 6px;
-}
-.label .name {
-  font-size: 13px;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.label .note {
-  font-size: 11.5px;
-  color: var(--faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.node.session .label .name { color: var(--faint); }
-.node.session.on .label .name { color: var(--ink); }
-
-.right { flex: none; display: flex; align-items: center; gap: 7px; }
-
-.count { display: flex; align-items: center; gap: 4px; font-size: 11px; }
-.count i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.count.waiting { color: #ffd479; }
-.count.working { color: #6fa8e6; }
-
-.flag.waiting { color: #ffd479; font-size: 11px; }
-
-.branch {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #b6b8c0;
-  font-size: 10px;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.branch svg { flex: none; fill: none; stroke: var(--faint); stroke-width: 1.4; }
-.branch.no-engine { opacity: 0.55; }
-.nogit { color: var(--faint); font-size: 10px; }
-
-/* ── the header strip ─────────────────────────────────────────────────────── */
-
-
-/* ── the context menu the design puts group work in ───────────────────────── */
-
-.scrim { position: fixed; inset: 0; z-index: 10; }
-.menu {
-  position: fixed;
-  z-index: 11;
-  min-width: 190px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #1c1f26;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-}
-.menu button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: 5px;
-  color: var(--ink);
-  font: inherit;
-  padding: 5px 9px;
-  cursor: pointer;
-}
-.menu button:hover { background: rgba(255, 255, 255, 0.08); }
-.menu button.danger { color: #e0776b; }
-
-
-/* ── the left column ──────────────────────────────────────────────────────── */
+/* ── the project column ───────────────────────────────────────────────────── */
 
 .aside {
   width: 340px;
@@ -404,18 +84,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: #0f1116;
+  background: var(--column);
 }
 
-.tree {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 6px 0;
-}
-
-/* The column's own head: what it holds, and what can be done to it. */
 .aside-head { flex: none; }
 .aside-head .title {
   display: flex;
@@ -427,7 +98,7 @@ html, body, #root {
   flex: 1;
   font-size: 10px;
   letter-spacing: 0.08em;
-  color: #b6b8c0;
+  color: var(--dim);
 }
 .aside-head .actions { display: flex; gap: 2px; }
 .aside-head .actions button {
@@ -444,7 +115,14 @@ html, body, #root {
   cursor: pointer;
 }
 .aside-head .actions button:hover { color: var(--ink); background: var(--raise); }
-.aside-head svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.aside-head svg,
+.aside-foot svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .aside-head .filter { padding: 0 12px 10px; }
 .aside-head .field {
@@ -472,7 +150,138 @@ html, body, #root {
 .aside-head .field input::placeholder { color: var(--faint); }
 .aside-head .field kbd { font: 10px/1 var(--font); color: var(--faint); }
 
-/* ── the column's foot: what the sessions cost, and what is left ──────────── */
+.tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+}
+
+/* ── a row ────────────────────────────────────────────────────────────────── */
+
+.node {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding-right: 8px;
+  cursor: default;
+}
+.node.leaf { height: 42px; }
+.node:hover { background: rgba(255, 255, 255, 0.04); }
+.node.on { background: rgba(255, 255, 255, 0.08); }
+.node.ticket, .node.session { cursor: pointer; }
+.node.session.external { cursor: default; opacity: 0.6; }
+
+/* Depth is drawn, not padded: the hairline has to run the row's full height. */
+.indent { position: relative; align-self: stretch; flex: none; }
+.indent .guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--guide);
+}
+
+.twist {
+  flex: none;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+}
+.twist svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mark {
+  flex: none;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mark svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mark.dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mark.working { color: var(--working); }
+.mark.waiting { color: var(--waiting); }
+.mark.done    { color: var(--done); }
+.mark.idle    { color: var(--faint); }
+.mark.gone    { color: var(--bad); }
+
+.label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 8px 0 6px;
+}
+.label .name {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label .note {
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.node.session .label .name { color: var(--faint); }
+.node.session.on .label .name { color: var(--ink); }
+
+.right { flex: none; display: flex; align-items: center; gap: 7px; }
+
+.count { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.count i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.count.waiting { color: var(--waiting); }
+.count.working { color: var(--working); }
+
+.flag.waiting { color: var(--waiting); font-size: 11px; }
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dim);
+  font-size: 10px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.branch svg { flex: none; fill: none; stroke: var(--faint); stroke-width: 1.4; }
+.branch.no-engine { opacity: 0.55; }
+.nogit { color: var(--faint); font-size: 10px; }
+
+/* ── the column's foot ────────────────────────────────────────────────────── */
 
 .aside-foot { flex: none; border-top: 1px solid var(--line); }
 
@@ -485,7 +294,6 @@ html, body, #root {
   color: var(--faint);
 }
 .aside-foot .resources .left { flex: 1; display: flex; align-items: center; gap: 7px; }
-.aside-foot .resources svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .aside-foot .resources .right { display: flex; gap: 12px; }
 .aside-foot .pair { display: flex; align-items: baseline; gap: 5px; }
 .aside-foot .pair em { font-style: normal; font-size: 10px; color: var(--faint); }
@@ -494,18 +302,227 @@ html, body, #root {
 .aside-foot .limits { padding: 9px 12px 11px; display: flex; flex-direction: column; gap: 9px; }
 .aside-foot .none { font-size: 10.5px; color: var(--faint); }
 
-/* A limit reads in one line and is checked on the bar under it. */
 .aside-foot .limit { display: flex; flex-direction: column; gap: 4px; }
 .aside-foot .limit .line { display: flex; align-items: center; gap: 8px; font-size: 10.5px; }
 .aside-foot .limit .left { flex: 1; display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.aside-foot .limit em { font-style: normal; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aside-foot .limit em {
+  font-style: normal;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .aside-foot .limit b { font-weight: 400; color: var(--faint); font-variant-numeric: tabular-nums; }
 .aside-foot .limit .resets { font-size: 10px; color: var(--faint); flex: none; }
-.aside-foot .limit .bar { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-.aside-foot .limit .bar > span { display: block; height: 100%; background: var(--faint); }
-
+.aside-foot .limit .meter {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.aside-foot .limit .meter > span { display: block; height: 100%; background: var(--faint); }
 /* Severity is the account's word, not a threshold invented here. */
-.aside-foot .limit.warning b { color: #ffd479; }
-.aside-foot .limit.warning .bar > span { background: #ffd479; }
-.aside-foot .limit.critical b { color: #e0776b; }
-.aside-foot .limit.critical .bar > span { background: #e0776b; }
+.aside-foot .limit.warning b { color: var(--waiting); }
+.aside-foot .limit.warning .meter > span { background: var(--waiting); }
+.aside-foot .limit.critical b { color: var(--bad); }
+.aside-foot .limit.critical .meter > span { background: var(--bad); }
+
+/* ── the reading pane ─────────────────────────────────────────────────────── */
+
+.pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 8px 8px 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.pane-head .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pane-head .where {
+  flex: 1;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A close affordance should be quiet: it is not the thing to reach for. */
+.pane-head .close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.pane-head .close svg {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  fill: none;
+}
+.pane-head .close:hover { color: #ffffff; }
+.pane-head .close:active { color: var(--dim); }
+.pane-head .close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+.empty { padding: 4px 12px; color: var(--faint); }
+.empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
+
+/* ── the terminal ─────────────────────────────────────────────────────────── */
+
+.terminal-pad {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 8px 4px 8px 10px;
+  overflow: hidden;
+}
+/* Nothing on this element but size: the fit addon measures it, and every pixel
+   of padding here becomes a row the window cannot show. */
+.terminal-host {
+  height: 100%;
+  width: 100%;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.terminal-host .xterm { height: 100%; width: 100%; }
+.terminal-host .xterm-viewport {
+  background: transparent !important;
+  overflow-y: scroll;
+}
+.terminal-host .xterm-screen { background: transparent; }
+.terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+
+/* ── reading a file ───────────────────────────────────────────────────────── */
+
+.doc-head { display: flex; justify-content: flex-end; padding: 6px 10px 0; }
+.views { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.views button {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.views button:hover { color: var(--ink); }
+.views button.on { background: var(--raise); color: var(--ink); }
+
+.doc {
+  user-select: text;
+  -webkit-user-select: text;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 28px 32px;
+}
+.doc.rendered {
+  font: 13px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 78ch;
+}
+.doc.rendered h1 { font-size: 22px; margin: 18px 0 10px; }
+.doc.rendered h2 { font-size: 17px; margin: 22px 0 8px; }
+.doc.rendered h3 { font-size: 14px; margin: 18px 0 6px; color: var(--dim); }
+.doc.rendered a { color: var(--accent); }
+.doc.rendered code {
+  font: 12px/1.5 var(--font);
+  background: var(--raise);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.doc.rendered pre {
+  background: rgba(0, 0, 0, 0.30);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.doc.rendered pre code { background: none; padding: 0; }
+.doc.rendered blockquote {
+  margin: 12px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+}
+.doc.rendered table { border-collapse: collapse; }
+.doc.rendered th, .doc.rendered td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.doc.rendered hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+.doc.rendered input[type="checkbox"] { margin-right: 6px; }
+
+.doc.raw { font: 12px/1.55 var(--font); padding-left: 10px; }
+.doc.raw table { border-collapse: collapse; width: 100%; }
+.doc.raw .ln {
+  width: 1%;
+  padding-right: 14px;
+  text-align: right;
+  color: var(--faint);
+  user-select: none;
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.doc.raw .src { white-space: pre-wrap; word-break: break-word; }
+
+/* ── odds and ends ────────────────────────────────────────────────────────── */
+
+.to-top {
+  position: absolute;
+  left: 292px;
+  bottom: 16px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+.to-top:hover { color: var(--ink); border-color: var(--dim); }
+
+.scrim { position: fixed; inset: 0; z-index: 10; }
+.menu {
+  position: fixed;
+  z-index: 11;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1c1f26;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--ink);
+  font: inherit;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.menu button:hover { background: rgba(255, 255, 255, 0.08); }
+.menu button.danger { color: var(--bad); }

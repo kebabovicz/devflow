@@ -124,7 +124,7 @@ export function AsideFoot({
                 </span>
                 <span className="resets">{resets(l.resets_at)}</span>
               </div>
-              <div className="bar">
+              <div className="meter">
                 <span style={{ width: `${Math.min(100, Math.max(0, l.percent))}%` }} />
               </div>
             </div>
