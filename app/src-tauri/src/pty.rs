@@ -22,6 +22,11 @@ use tauri::{AppHandle, Emitter};
 pub struct Pane {
     master: Box<dyn MasterPty + Send>,
     child: Box<dyn portable_pty::Child + Send + Sync>,
+    /// Taken once, at open, and kept for the life of the pane.
+    /// `take_writer` refuses a second call — "cannot take writer more than
+    /// once" — so taking it per keystroke delivers the first character typed
+    /// and silently drops every one after it.
+    writer: Box<dyn Write + Send>,
 }
 
 #[derive(Default)]
@@ -113,6 +118,11 @@ pub fn pane_open(
         .map_err(|e| format!("could not attach to session {session}: {e}"))?;
     drop(pair.slave);
 
+    let writer = pair
+        .master
+        .take_writer()
+        .map_err(|e| format!("could not open the write side of the pane: {e}"))?;
+
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     let mut reader = pair
         .master
@@ -140,7 +150,7 @@ pub fn pane_open(
         .0
         .lock()
         .map_err(|_| "pane registry is poisoned".to_string())?
-        .insert(id, Pane { master: pair.master, child });
+        .insert(id, Pane { master: pair.master, child, writer });
     Ok(id)
 }
 
@@ -152,14 +162,11 @@ pub fn pane_write(
 ) -> Result<(), String> {
     let mut guard = panes.0.lock().map_err(|_| "pane registry is poisoned".to_string())?;
     let entry = guard.get_mut(&pane).ok_or_else(|| format!("no pane {pane}"))?;
-    let mut writer = entry
-        .master
-        .take_writer()
-        .map_err(|e| format!("could not write to pane {pane}: {e}"))?;
-    writer
+    entry
+        .writer
         .write_all(&unb64(&data))
         .map_err(|e| format!("could not write to pane {pane}: {e}"))?;
-    writer.flush().ok();
+    entry.writer.flush().ok();
     Ok(())
 }
 

@@ -123,8 +123,12 @@ export function TerminalPane({
           }),
         );
 
+        // A failed write is reported rather than dropped. Silence here is what
+        // made "typing does nothing" take three attempts to find: the write was
+        // rejected on every keystroke and nobody was listening.
         term.onData((data) => {
-          if (pane !== null) void paneWrite(pane, encode(data));
+          if (pane === null) return;
+          paneWrite(pane, encode(data)).catch((e) => onError(String(e)));
         });
 
         // Typing has to reach the session without a click first: the pane was
@@ -151,6 +155,17 @@ export function TerminalPane({
     };
   }, [session]);
 
-  // Clicking anywhere in the pane puts the keyboard back in the terminal.
-  return <div className="terminal-host" ref={host} onMouseDown={() => host.current?.querySelector<HTMLTextAreaElement>(".xterm-helper-textarea")?.focus()} />;
+  // The padding lives on the wrapper, never on the element the fit addon
+  // measures: it reads that element's box as available space, so padding there
+  // buys a row that does not fit and falls off the bottom.
+  return (
+    <div
+      className="terminal-pad"
+      onMouseDown={() =>
+        host.current?.querySelector<HTMLTextAreaElement>(".xterm-helper-textarea")?.focus()
+      }
+    >
+      <div className="terminal-host" ref={host} />
+    </div>
+  );
 }

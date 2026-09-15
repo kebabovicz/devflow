@@ -78,7 +78,6 @@ html, body, #root {
 
 .tree {
   width: 340px;
-  background: rgba(0, 0, 0, 0.10);
   flex: none;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -171,13 +170,16 @@ html, body, #root {
 /* The pane clips; the terminal sizes itself to what is left. Padding lives on
    this element because that is what the fit addon measures, so the rows it
    computes are the rows that actually fit. */
-.terminal-host {
+.terminal-pad {
   flex: 1;
   min-height: 0;
   min-width: 0;
   padding: 8px 4px 8px 10px;
   overflow: hidden;
 }
+/* Nothing on this element but size: the fit addon measures it, and every pixel
+   of padding here becomes a row the window cannot show. */
+.terminal-host { height: 100%; width: 100%; }
 .terminal-host .xterm { height: 100%; width: 100%; }
 .terminal-host .xterm-viewport { background: transparent !important; }
 .terminal-host .xterm-screen { background: transparent; }
