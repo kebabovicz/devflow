@@ -29,7 +29,7 @@ setup() {
   git -C "$REPO" -c user.email=t@t -c user.name=t commit -q -m "the work" 2>/dev/null
   SHA=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null)
   printf 'git:\n  base_branch: main\n\nmaps:\n  dir: .devflow/maps\n' > "$REPO/.devflow/project.yml"
-  printf '# alpha\n\nВетка работы — `work`.\n' > "$E/map.md"
+  printf '# alpha\n\nWork branch: `work`.\n' > "$E/map.md"
   mk 01-work "in progress" x
   mk 02-open open x
   mk 03-untick "in progress" " "
@@ -119,9 +119,9 @@ fi
 echo "── accept"
 setup
 run ticket report 01-work --commit "$SHA" >/dev/null 2>&1
-ck "accepting succeeds"                 accepted '.reason' ticket accept 01-work --by "кебабович"
+ck "accepting succeeds"                 accepted '.reason' ticket accept 01-work --by "Ünïcode Reviewer"
 ck_hdr "only now is it done"             Status "done" "$T/01-work.md"
-ck_grep "who accepted it is recorded"    '^Accepted: .* by кебабович$' "$T/01-work.md"
+ck_grep "who accepted it is recorded"    '^Accepted: .* by Ünïcode Reviewer$' "$T/01-work.md"
 ck_grep "the report stays as the trail"  '^Reported: ' "$T/01-work.md"
 
 setup
@@ -155,9 +155,9 @@ ck "a ticket closed before this existed reads legacy" legacy '.repos[0].maps[0].
 setup
 run ticket report 01-work --commit "$SHA" >/dev/null 2>&1
 ck "a reported ticket reads reported" reported '.repos[0].maps[0].tickets[] | select(.id=="01-work") | .acceptance_state' status --json
-run ticket accept 01-work --by "кебабович" >/dev/null 2>&1
+run ticket accept 01-work --by "Ünïcode Reviewer" >/dev/null 2>&1
 ck "an accepted one reads accepted" accepted '.repos[0].maps[0].tickets[] | select(.id=="01-work") | .acceptance_state' status --json
-ck "and says who"  "true" '.repos[0].maps[0].tickets[] | select(.id=="01-work") | (.accepted | test("кебабович"))' status --json
+ck "and says who"  "true" '.repos[0].maps[0].tickets[] | select(.id=="01-work") | (.accepted | test("Reviewer"))' status --json
 
 # ── the state headers are not text to type ──────────────────────────────────
 
