@@ -18,7 +18,7 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window_vibrancy::apply_vibrancy(
                         &window,
-                        window_vibrancy::NSVisualEffectMaterial::HudWindow,
+                        window_vibrancy::NSVisualEffectMaterial::UnderWindowBackground,
                         None,
                         None,
                     );

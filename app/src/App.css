@@ -1,15 +1,22 @@
-/* The window is translucent: the system paints its material behind the page, so
-   everything here is layered on top of it and no surface is fully opaque. */
+/* Two surfaces, and the difference between them is the whole look.
+   The window itself stays translucent — the system's blur shows through the
+   chrome and the sidebar, where the text is short labels a light scrim carries.
+   The terminal does not: it is dense text that has to be read for minutes at a
+   time, so it sits on a solid card inset from the window, the way a document
+   does in an editor. Translucency behind a wall of monospace is a wall of
+   monospace you cannot read. */
 
 :root {
-  --ink: #e8e8ea;
-  --dim: #9a9aa2;
-  --faint: #6e6e78;
-  --line: rgba(255, 255, 255, 0.08);
-  --raise: rgba(255, 255, 255, 0.05);
-  --accent: #7fb3ff;
-  --warn: #ffcc66;
-  --busy: #7ee787;
+  --scrim: rgba(20, 22, 28, 0.42);
+  --card: #15171d;
+  --ink: #f2f3f5;
+  --dim: #b6b8c0;
+  --faint: #8b8d97;
+  --line: rgba(255, 255, 255, 0.10);
+  --raise: rgba(255, 255, 255, 0.07);
+  --accent: #8cc0ff;
+  --warn: #ffd479;
+  --busy: #8ef0a2;
   --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
@@ -22,9 +29,17 @@ html, body, #root {
   color: var(--ink);
   font: 12px/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
+  /* The window does not scroll. Its panes do — a window that slides as a whole
+     leaves the header somewhere off the top and nothing to grab. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-.app { display: flex; flex-direction: column; height: 100%; }
+/* One scrim for the whole window, so panes do not stack their own and end up
+   at different opacities. */
+#root { background: var(--scrim); }
+
+.app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 .bar {
   display: flex;
@@ -53,7 +68,7 @@ html, body, #root {
 
 .error {
   padding: 6px 12px;
-  background: rgba(255, 90, 90, 0.12);
+  background: rgba(120, 30, 30, 0.55);
   border-bottom: 1px solid var(--line);
   color: #ff9c9c;
   white-space: pre-wrap;
@@ -65,7 +80,7 @@ html, body, #root {
   width: 340px;
   flex: none;
   overflow-y: auto;
-  border-right: 1px solid var(--line);
+  overscroll-behavior: contain;
   padding-bottom: 24px;
 }
 
@@ -121,7 +136,17 @@ html, body, #root {
 .empty { padding: 4px 12px; color: var(--faint); }
 .empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
 
-.pane { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 8px 8px 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
 
 .pane-head {
   display: flex;
@@ -131,17 +156,53 @@ html, body, #root {
   border-bottom: 1px solid var(--line);
 }
 .pane-head .where { flex: 1; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pane-head button {
-  background: var(--raise);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--dim);
-  font: inherit;
-  padding: 2px 8px;
+/* A close affordance should be quiet: it is not the thing to reach for, and a
+   framed button reads as one. Grey until pointed at. */
+.pane-head .close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--faint);
   cursor: pointer;
 }
-.pane-head button:hover { color: var(--ink); }
+.pane-head .close svg {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  fill: none;
+}
+.pane-head .close:hover { color: #ffffff; }
+.pane-head .close:active { color: var(--dim); }
+.pane-head .close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
 
-.terminal-host { flex: 1; min-height: 0; padding: 6px 0 0 8px; }
-.terminal-host .xterm { height: 100%; }
+/* The pane clips; the terminal sizes itself to what is left. Padding lives on
+   this element because that is what the fit addon measures, so the rows it
+   computes are the rows that actually fit. */
+.terminal-pad {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 8px 4px 8px 10px;
+  overflow: hidden;
+}
+/* Nothing on this element but size: the fit addon measures it, and every pixel
+   of padding here becomes a row the window cannot show. */
+.terminal-host { height: 100%; width: 100%; }
+.terminal-host .xterm { height: 100%; width: 100%; }
 .terminal-host .xterm-viewport { background: transparent !important; }
+.terminal-host .xterm-screen { background: transparent; }
+/* A thin scrollbar rather than none: what is scrollable is worth showing, and
+   a full-screen interface simply has nothing to scroll. */
+.terminal-host .xterm-viewport { overflow-y: scroll; }
+.terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+.terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}

@@ -80,6 +80,12 @@ export interface Status {
 export const engineStatus = (paths: string[]) =>
   invoke<Status>("engine_status", { paths });
 
+/// Every session Claude Code knows about, whatever directory it stands in.
+/// Read straight from the registry rather than out of the repositories the
+/// window happens to be watching: the sessions are the first thing a person
+/// opens this window for, and they must be there before anything is configured.
+export const claudeAgents = () => invoke<Session[]>("claude_agents");
+
 export const discoverRepos = (folder: string) =>
   invoke<string[]>("discover_repos", { folder });
 

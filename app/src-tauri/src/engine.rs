@@ -85,9 +85,39 @@ pub fn engine_status(paths: Vec<String>) -> Result<serde_json::Value, String> {
 ///
 /// The application keeps no registry of its own: a second one would only give
 /// the two a chance to disagree about which sessions exist.
+///
+/// Normalised into the same shape `devflow status` puts sessions in, so a
+/// session looks the same wherever it is read from. The short id is what
+/// `claude attach` takes; the registry's own is the full one.
 #[tauri::command]
 pub fn claude_agents() -> Result<serde_json::Value, String> {
-    run_json(Path::new("claude"), &["agents", "--json"])
+    let raw = run_json(Path::new("claude"), &["agents", "--json"])?;
+    let list = raw.as_array().cloned().unwrap_or_default();
+    let out: Vec<serde_json::Value> = list
+        .into_iter()
+        .map(|s| {
+            let full = s.get("sessionId").and_then(|v| v.as_str()).unwrap_or("");
+            let started = s
+                .get("startedAt")
+                .and_then(|v| v.as_i64())
+                .and_then(|ms| chrono::DateTime::from_timestamp_millis(ms))
+                .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
+            serde_json::json!({
+                "id": full.chars().take(8).collect::<String>(),
+                "session_id": full,
+                "name": s.get("name").cloned().unwrap_or(serde_json::Value::Null),
+                "kind": s.get("kind").cloned().unwrap_or(serde_json::Value::Null),
+                "status": s.get("status").cloned().unwrap_or(serde_json::Value::Null),
+                "pid": s.get("pid").cloned().unwrap_or(serde_json::Value::Null),
+                "cwd": s.get("cwd").and_then(|v| v.as_str()).unwrap_or(""),
+                "started_at": started,
+                // A session that has exited stays in the registry with a null
+                // pid. It is history, not something to attach to.
+                "live": s.get("pid").map(|p| !p.is_null()).unwrap_or(false),
+            })
+        })
+        .collect();
+    Ok(serde_json::Value::Array(out))
 }
 
 /// Repositories directly under a folder — the product folder, in one level.
