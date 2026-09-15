@@ -96,6 +96,28 @@ export const groupsSave = (groups: Group[]) =>
 export const groupRepos = (group: Group) => invoke<string[]>("group_repos", { group });
 export const readText = (path: string) => invoke<string>("read_text", { path });
 
+export interface Limit {
+  kind: string;
+  group: string;
+  percent: number;
+  severity: string;
+  resets_at: string | null;
+  scope: string | null;
+}
+
+export interface Load {
+  sessions: number;
+  cpu_percent: number;
+  memory_mb: number;
+}
+
+export const sessionLoad = (pids: number[]) => invoke<Load>("session_load", { pids });
+
+/// The account's limits, asked of Claude Code over its control protocol. One
+/// short-lived session answers for every session shown, so this is polled on a
+/// slow clock of its own rather than with the tree.
+export const accountLimits = () => invoke<Limit[]>("account_limits");
+
 export const paneOpen = (session: string, rows: number, cols: number) =>
   invoke<number>("pane_open", { session, rows, cols });
 

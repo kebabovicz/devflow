@@ -14,7 +14,11 @@ import {
   groupRepos,
   groupsLoad,
   groupsSave,
+  accountLimits,
+  sessionLoad,
   type Group,
+  type Limit,
+  type Load,
   type Repo,
   type Session,
   type Status,
@@ -25,6 +29,31 @@ import { DocumentPane } from "./Document";
 import "./App.css";
 
 const POLL_MS = 2500;
+// The limits cost a short-lived session to read, so they move on their own clock.
+const LIMITS_MS = 5 * 60 * 1000;
+
+/// A session belongs to the repository it stands in — or under it: a session
+/// working in a worktree has its own directory inside the repository, not the
+/// repository itself.
+function sessionsUnder(all: Session[], repo: string): Session[] {
+  return all.filter((s) => s.cwd === repo || s.cwd.startsWith(repo + "/"));
+}
+
+function shortReset(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const days = Math.round((d.getTime() - Date.now()) / 86400000);
+  return days >= 1
+    ? `resets ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+    : `resets ${d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function limitLabel(l: Limit): string {
+  if (l.kind === "session") return "5-hour";
+  if (l.kind === "weekly_all") return "weekly";
+  if (l.kind === "weekly_scoped") return l.scope ? `weekly · ${l.scope.toLowerCase()}` : "weekly";
+  return l.kind.replace(/_/g, " ");
+}
 
 type Showing =
   | { kind: "session"; session: Session }
@@ -60,6 +89,9 @@ export default function App() {
   const [showing, setShowing] = useState<Showing>(null);
   const [, setPane] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [load, setLoad] = useState<Load | null>(null);
+  const [limits, setLimits] = useState<Limit[] | null>(null);
+  const [limitsError, setLimitsError] = useState(false);
   const tree = useRef<HTMLDivElement>(null);
 
   // ── what is watched ───────────────────────────────────────────────────────
@@ -132,6 +164,26 @@ export default function App() {
     return () => clearInterval(t);
   }, [refresh]);
 
+  useEffect(() => {
+    const pids = sessions.filter((s) => s.pid !== null).map((s) => s.pid as number);
+    sessionLoad(pids)
+      .then(setLoad)
+      .catch(() => setLoad(null));
+  }, [sessions]);
+
+  useEffect(() => {
+    const ask = () =>
+      accountLimits()
+        .then((l) => {
+          setLimits(l);
+          setLimitsError(false);
+        })
+        .catch(() => setLimitsError(true));
+    void ask();
+    const t = setInterval(ask, LIMITS_MS);
+    return () => clearInterval(t);
+  }, []);
+
   const repoByPath = useMemo(() => {
     const m = new Map<string, Repo>();
     for (const r of status?.repos ?? []) m.set(r.path, r);
@@ -158,6 +210,37 @@ export default function App() {
     }
     return out;
   }, [status]);
+
+
+  const sessionRow = (s: Session) => {
+    const attachable = s.kind === "background";
+    const on = showing?.kind === "session" && showing.session.session_id === s.session_id;
+    return (
+      <div
+        key={s.session_id}
+        className={`row session ${on ? "on" : ""} ${attachable ? "" : "external"}`}
+        onClick={() => attachable && setShowing({ kind: "session", session: s })}
+        title={attachable ? s.cwd : `${s.cwd} — started outside this window, view only`}
+      >
+        <span className={`dot ${s.status ?? "idle"}`} />
+        <span className="id">{s.name ?? s.id}</span>
+        <span className="why">{s.status ?? ""}</span>
+        <span className="where">{s.cwd.split("/").pop()}</span>
+      </div>
+    );
+  };
+
+  const watched = useMemo(
+    () => [...new Set(Object.values(reposByGroup).flat())],
+    [reposByGroup],
+  );
+
+  // A session in a directory no group watches is still running and still worth
+  // reaching. Hiding it would make the window lie about what is going on.
+  const elsewhere = useMemo(
+    () => live.filter((s) => !watched.some((r) => s.cwd === r || s.cwd.startsWith(r + "/"))),
+    [live, watched],
+  );
 
   const openFile = (path: string, title: string) => setShowing({ kind: "file", path, title });
 
@@ -213,29 +296,6 @@ export default function App() {
             </section>
           )}
 
-          <section className="group">
-            <h2>
-              Sessions<span className="count">{live.length}</span>
-            </h2>
-            {live.length === 0 && <div className="empty">none running</div>}
-            {live.map((s) => {
-              const attachable = s.kind === "background";
-              const on = showing?.kind === "session" && showing.session.session_id === s.session_id;
-              return (
-                <div
-                  key={s.session_id}
-                  className={`row session ${on ? "on" : ""} ${attachable ? "" : "external"}`}
-                  onClick={() => attachable && setShowing({ kind: "session", session: s })}
-                  title={attachable ? s.cwd : `${s.cwd} — started outside this window, view only`}
-                >
-                  <span className={`dot ${s.status ?? "idle"}`} />
-                  <span className="id">{s.name ?? s.id}</span>
-                  <span className="why">{s.status ?? ""}</span>
-                  <span className="where">{s.cwd.split("/").pop()}</span>
-                </div>
-              );
-            })}
-          </section>
 
           {groups.map((g) => (
             <section className="group" key={g.id}>
@@ -274,6 +334,7 @@ export default function App() {
                         <span className="id">{name}</span>
                         <span className="where">{r ? (r.branch ?? "not a repository") : "…"}</span>
                       </div>
+                      {sessionsUnder(live, path).map(sessionRow)}
                       {r && !r.engine && <div className="empty">engine not set up here</div>}
                       {r?.maps.map((m) => (
                         <div key={m.path}>
@@ -314,6 +375,14 @@ export default function App() {
             </section>
           ))}
 
+          {elsewhere.length > 0 && (
+            <section className="group">
+              <h2>
+                Elsewhere<span className="count">{elsewhere.length}</span>
+              </h2>
+              {elsewhere.map(sessionRow)}
+            </section>
+          )}
         </aside>
 
         {scrolled && (
@@ -358,6 +427,27 @@ export default function App() {
           )}
         </main>
       </div>
+
+      <footer className="load">
+        <span className="active">{load?.sessions ?? 0} active</span>
+        <span className="metric">
+          cpu <b>{load ? `${load.cpu_percent}%` : "—"}</b>
+        </span>
+        <span className="metric" title="Summed resident memory — shared pages counted once per session, so read it as an upper bound">
+          mem <b>{load ? `${(load.memory_mb / 1024).toFixed(1)} GB` : "—"}</b>
+        </span>
+        <span className="spacer" />
+        {limitsError && <span className="metric dim">limits unavailable</span>}
+        {(limits ?? []).map((l) => (
+          <span className={`limit ${l.severity}`} key={l.kind + (l.scope ?? "")}>
+            <span className="bar">
+              <span style={{ width: `${Math.min(100, l.percent)}%` }} />
+            </span>
+            {limitLabel(l)} <b>{l.percent}%</b>
+            <span className="resets">{shortReset(l.resets_at)}</span>
+          </span>
+        ))}
+      </footer>
     </div>
   );
 }

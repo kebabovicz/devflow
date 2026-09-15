@@ -378,3 +378,52 @@ html, body, #root {
 .to-top:hover { color: var(--ink); border-color: var(--dim); }
 
 .body { position: relative; }
+
+
+/* ── the footer: what the sessions cost, and what is left ─────────────────── */
+
+.load {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.load .active { color: var(--dim); }
+.load .metric b { color: var(--ink); font-weight: 400; margin-left: 2px; }
+.load .metric.dim { opacity: 0.7; }
+
+/* A limit is a number over a bar: the bar is read at a glance, the number when
+   the glance was not enough. */
+.load .limit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 5px;
+}
+.load .limit b { color: var(--ink); font-weight: 400; }
+.load .limit .resets { opacity: 0.7; }
+.load .limit .bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.load .limit .bar > span {
+  display: block;
+  height: 100%;
+  background: var(--dim);
+  border-radius: 1px;
+}
+/* Severity comes from the account, not from a threshold invented here. */
+.load .limit.warning .bar > span { background: var(--warn); }
+.load .limit.warning b { color: var(--warn); }
+.load .limit.critical .bar > span { background: #ff8b8b; }
+.load .limit.critical b { color: #ff8b8b; }

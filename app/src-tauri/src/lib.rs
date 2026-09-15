@@ -1,6 +1,7 @@
 mod engine;
 mod groups;
 mod pty;
+mod resources;
 
 use std::sync::Arc;
 
@@ -37,6 +38,8 @@ pub fn run() {
             groups::groups_save,
             groups::group_repos,
             groups::read_text,
+            resources::session_load,
+            resources::account_limits,
             pty::pane_open,
             pty::pane_write,
             pty::pane_send_line,
