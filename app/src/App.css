@@ -1,22 +1,34 @@
-/* Two surfaces, and the difference between them is the whole look.
-   The window itself stays translucent — the system's blur shows through the
-   chrome and the sidebar, where the text is short labels a light scrim carries.
-   The terminal does not: it is dense text that has to be read for minutes at a
-   time, so it sits on a solid card inset from the window, the way a document
-   does in an editor. Translucency behind a wall of monospace is a wall of
-   monospace you cannot read. */
+/* The window.
+ *
+ * Two surfaces, and the difference between them is the whole look. The window
+ * itself stays translucent — the chrome and the project column, where the text
+ * is short labels a light scrim carries. The reading panes do not: dense text
+ * read for minutes sits on a solid card inset from the window, the way a
+ * document does in an editor.
+ *
+ * Sizes and colours in the tree and in the column's head and foot are taken
+ * from the design file rather than chosen here. Where a number looks arbitrary
+ * it is because it is the design's.
+ */
 
 :root {
   --scrim: rgba(20, 22, 28, 0.42);
   --card: #15171d;
+  /* No fill of its own: the column lies on the window's translucency the way
+     the title strip does. What separates it from the reading pane is that
+     pane's card and border, not a darker box behind the tree. */
+  --column: transparent;
   --ink: #f2f3f5;
   --dim: #b6b8c0;
   --faint: #8b8d97;
   --line: rgba(255, 255, 255, 0.10);
   --raise: rgba(255, 255, 255, 0.07);
+  --guide: rgba(255, 255, 255, 0.07);
   --accent: #8cc0ff;
-  --warn: #ffd479;
-  --busy: #8ef0a2;
+  --working: #6fa8e6;
+  --waiting: #ffd479;
+  --done: #7ec699;
+  --bad: #e0776b;
   --font: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 }
 
@@ -29,44 +41,33 @@ html, body, #root {
   color: var(--ink);
   font: 12px/1.5 var(--font);
   -webkit-font-smoothing: antialiased;
-  /* The window does not scroll. Its panes do — a window that slides as a whole
-     leaves the header somewhere off the top and nothing to grab. */
+  /* Nothing in the chrome is text to select: selection swallows the window
+     drag, and then the title bar cannot be grabbed. */
+  user-select: none;
+  -webkit-user-select: none;
+  /* The window does not scroll. Its panes do. */
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-/* One scrim for the whole window, so panes do not stack their own and end up
-   at different opacities. */
 #root { background: var(--scrim); }
 
 .app { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+/* ── the window's own bar ─────────────────────────────────────────────────── */
 
 .bar {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 12px 8px 84px; /* room for the traffic lights */
-  border-bottom: 1px solid var(--line);
-  -webkit-app-region: drag;
+  padding: 8px 12px 8px 78px; /* room for the traffic lights */
 }
-
 .brand { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
-
-.folder {
-  flex: 1;
-  background: var(--raise);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink);
-  font: inherit;
-  padding: 4px 8px;
-  -webkit-app-region: no-drag;
-}
-.folder:focus { outline: none; border-color: var(--accent); }
-
+.spacer { flex: 1; }
 .generated { color: var(--faint); }
 
 .error {
+  cursor: default;
   padding: 6px 12px;
   background: rgba(120, 30, 30, 0.55);
   border-bottom: 1px solid var(--line);
@@ -74,74 +75,306 @@ html, body, #root {
   white-space: pre-wrap;
 }
 
-.body { display: flex; flex: 1; min-height: 0; }
+.body { position: relative; display: flex; flex: 1; min-height: 0; }
 
-.tree {
+/* ── the project column ───────────────────────────────────────────────────── */
+
+.aside {
   width: 340px;
   flex: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--column);
+  /* Folding animates the width, and the contents slide out with it. Clipping
+     alone leaves the column standing while the card creeps over it; moving the
+     contents the same distance is what makes it leave rather than be covered.
+     Rows are never reflowed on the way — a redraw that ends at zero is not a
+     fold. */
+  overflow: hidden;
+  transition: width 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.aside > * {
+  min-width: 340px;
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.aside.folded { width: 0; }
+.aside.folded > * { transform: translateX(-340px); }
+@media (prefers-reduced-motion: reduce) {
+  .aside, .aside > * { transition: none; }
 }
 
-.group { padding: 10px 0 4px; }
-.group h2 {
+/* The fold sits where macOS puts it: left of the title, beside the lights. */
+.bar .fold {
   display: flex;
-  justify-content: space-between;
-  margin: 0 12px 6px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.bar .fold:hover { color: var(--ink); background: var(--raise); }
+.bar .fold svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+.bar .fold[aria-pressed="true"] { color: var(--dim); }
+
+.aside-head { flex: none; }
+.aside-head .title {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 8px 0 12px;
+}
+.aside-head .caption {
+  flex: 1;
   font-size: 10px;
-  font-weight: 600;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--dim);
+}
+.aside-head .actions { display: flex; gap: 2px; }
+.aside-head .actions button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.aside-head .actions button:hover { color: var(--ink); background: var(--raise); }
+.aside-head svg,
+.aside-foot svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.aside-head .filter { padding: 0 12px 10px; }
+.aside-head .field {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   color: var(--faint);
 }
-.branch { color: var(--faint); text-transform: none; letter-spacing: 0; }
+.aside-head .field:focus-within { border-color: var(--accent); }
+.aside-head .field input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font: 12px/1 var(--font);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.aside-head .field input::placeholder { color: var(--faint); }
+.aside-head .field kbd { font: 10px/1 var(--font); color: var(--faint); }
 
-.attention h2 { color: var(--warn); }
+.tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+}
 
-.effort { margin: 8px 12px 2px; color: var(--faint); }
+/* ── a row ────────────────────────────────────────────────────────────────── */
 
-.row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "id why" "where where";
-  gap: 0 8px;
-  padding: 5px 12px;
-  border-left: 2px solid transparent;
+.node {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding-right: 8px;
   cursor: default;
 }
-.row .id { grid-area: id; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .why { grid-area: why; color: var(--dim); }
-.row .where { grid-area: where; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node.leaf { height: 42px; }
+.node:hover { background: rgba(255, 255, 255, 0.04); }
+.node.on { background: rgba(255, 255, 255, 0.08); }
+.node.ticket, .node.session { cursor: pointer; }
+.node.session.external { cursor: default; opacity: 0.6; }
 
-.row.waiting { border-left-color: var(--warn); }
-.row.waiting .why { color: var(--warn); }
-
-.row.session { cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "dot id why" "dot where where"; }
-.row.session:hover { background: var(--raise); }
-.row.session.on { background: var(--raise); border-left-color: var(--accent); }
-.row.session.external { cursor: default; opacity: 0.55; }
-
-.dot {
-  grid-area: dot;
-  align-self: center;
-  width: 6px; height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--faint);
+/* Depth is drawn, not padded: the hairline has to run the row's full height. */
+.indent { position: relative; align-self: stretch; flex: none; }
+.indent .guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--guide);
 }
-.dot.busy { background: var(--busy); }
-.dot.idle { background: var(--faint); }
 
-.empty { padding: 4px 12px; color: var(--faint); }
-.empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
+.twist {
+  flex: none;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+}
+.twist svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mark {
+  flex: none;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mark svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mark.dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mark.working { color: var(--working); }
+.mark.waiting { color: var(--waiting); }
+.mark.done    { color: var(--done); }
+.mark.idle    { color: var(--faint); }
+.mark.gone    { color: var(--bad); }
+
+.label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 8px 0 6px;
+}
+.label .name {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label .note {
+  font-size: 11.5px;
+  line-height: 16px;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.node.session .label .name { color: var(--faint); }
+.node.session.on .label .name { color: var(--ink); }
+
+.right { flex: none; display: flex; align-items: center; gap: 7px; }
+
+.count { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.count i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.count.waiting { color: var(--waiting); }
+.count.working { color: var(--working); }
+
+.flag.waiting { color: var(--waiting); font-size: 11px; }
+
+.branch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dim);
+  font-size: 10px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.branch svg { flex: none; fill: none; stroke: var(--faint); stroke-width: 1.4; }
+.branch.no-engine { opacity: 0.55; }
+.nogit { color: var(--faint); font-size: 10px; }
+
+/* ── the column's foot ────────────────────────────────────────────────────── */
+
+.aside-foot { flex: none; border-top: 1px solid var(--line); }
+
+.aside-foot .resources {
+  display: flex;
+  align-items: center;
+  height: 35px;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.aside-foot .resources .left { flex: 1; display: flex; align-items: center; gap: 7px; }
+.aside-foot .resources .right { display: flex; gap: 12px; }
+.aside-foot .pair { display: flex; align-items: baseline; gap: 5px; }
+.aside-foot .pair em { font-style: normal; font-size: 10px; color: var(--faint); }
+.aside-foot .pair b { font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.aside-foot .limits { padding: 9px 12px 11px; display: flex; flex-direction: column; gap: 9px; }
+.aside-foot .none { font-size: 10.5px; color: var(--faint); }
+
+.aside-foot .limit { display: flex; flex-direction: column; gap: 4px; }
+.aside-foot .limit .line { display: flex; align-items: center; gap: 8px; font-size: 10.5px; }
+.aside-foot .limit .left { flex: 1; display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.aside-foot .limit em {
+  font-style: normal;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aside-foot .limit b { font-weight: 400; color: var(--faint); font-variant-numeric: tabular-nums; }
+.aside-foot .limit .resets { font-size: 10px; color: var(--faint); flex: none; }
+.aside-foot .limit .meter {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.aside-foot .limit .meter > span { display: block; height: 100%; background: var(--faint); }
+/* Severity is the account's word, not a threshold invented here. */
+.aside-foot .limit.warning b { color: var(--waiting); }
+.aside-foot .limit.warning .meter > span { background: var(--waiting); }
+.aside-foot .limit.critical b { color: var(--bad); }
+.aside-foot .limit.critical .meter > span { background: var(--bad); }
+
+/* ── the reading pane ─────────────────────────────────────────────────────── */
 
 .pane {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  margin: 8px 8px 8px 0;
+  margin: 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--card);
@@ -155,9 +388,16 @@ html, body, #root {
   padding: 6px 12px;
   border-bottom: 1px solid var(--line);
 }
-.pane-head .where { flex: 1; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* A close affordance should be quiet: it is not the thing to reach for, and a
-   framed button reads as one. Grey until pointed at. */
+.pane-head .id { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pane-head .where {
+  flex: 1;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A close affordance should be quiet: it is not the thing to reach for. */
 .pane-head .close {
   display: flex;
   align-items: center;
@@ -181,9 +421,11 @@ html, body, #root {
 .pane-head .close:active { color: var(--dim); }
 .pane-head .close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
 
-/* The pane clips; the terminal sizes itself to what is left. Padding lives on
-   this element because that is what the fit addon measures, so the rows it
-   computes are the rows that actually fit. */
+.empty { padding: 4px 12px; color: var(--faint); }
+.empty.hint { padding: 24px; max-width: 42ch; line-height: 1.7; }
+
+/* ── the terminal ─────────────────────────────────────────────────────────── */
+
 .terminal-pad {
   flex: 1;
   min-height: 0;
@@ -193,16 +435,168 @@ html, body, #root {
 }
 /* Nothing on this element but size: the fit addon measures it, and every pixel
    of padding here becomes a row the window cannot show. */
-.terminal-host { height: 100%; width: 100%; }
+.terminal-host {
+  height: 100%;
+  width: 100%;
+  user-select: text;
+  -webkit-user-select: text;
+}
 .terminal-host .xterm { height: 100%; width: 100%; }
-.terminal-host .xterm-viewport { background: transparent !important; }
+.terminal-host .xterm-viewport {
+  background: transparent !important;
+  overflow-y: scroll;
+}
 .terminal-host .xterm-screen { background: transparent; }
-/* A thin scrollbar rather than none: what is scrollable is worth showing, and
-   a full-screen interface simply has nothing to scroll. */
-.terminal-host .xterm-viewport { overflow-y: scroll; }
 .terminal-host .xterm-viewport::-webkit-scrollbar { width: 8px; }
 .terminal-host .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
 .terminal-host .xterm-viewport::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.14);
   border-radius: 4px;
+}
+
+/* ── reading a file ───────────────────────────────────────────────────────── */
+
+.doc-head { display: flex; justify-content: flex-end; padding: 6px 10px 0; }
+.views { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.views button {
+  background: none;
+  border: none;
+  color: var(--faint);
+  font: inherit;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.views button:hover { color: var(--ink); }
+.views button.on { background: var(--raise); color: var(--ink); }
+
+.doc {
+  user-select: text;
+  -webkit-user-select: text;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 28px 32px;
+}
+.doc.rendered {
+  font: 13px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 78ch;
+}
+.doc.rendered h1 { font-size: 22px; margin: 18px 0 10px; }
+.doc.rendered h2 { font-size: 17px; margin: 22px 0 8px; }
+.doc.rendered h3 { font-size: 14px; margin: 18px 0 6px; color: var(--dim); }
+.doc.rendered a { color: var(--accent); }
+.doc.rendered code {
+  font: 12px/1.5 var(--font);
+  background: var(--raise);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+.doc.rendered pre {
+  background: rgba(0, 0, 0, 0.30);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.doc.rendered pre code { background: none; padding: 0; }
+.doc.rendered blockquote {
+  margin: 12px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+}
+.doc.rendered table { border-collapse: collapse; }
+.doc.rendered th, .doc.rendered td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.doc.rendered hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+.doc.rendered input[type="checkbox"] { margin-right: 6px; }
+
+.doc.raw { font: 12px/1.55 var(--font); padding-left: 10px; }
+.doc.raw table { border-collapse: collapse; width: 100%; }
+.doc.raw .ln {
+  width: 1%;
+  padding-right: 14px;
+  text-align: right;
+  color: var(--faint);
+  user-select: none;
+  vertical-align: top;
+  font-variant-numeric: tabular-nums;
+}
+.doc.raw .src { white-space: pre-wrap; word-break: break-word; }
+
+/* ── odds and ends ────────────────────────────────────────────────────────── */
+
+
+.scrim { position: fixed; inset: 0; z-index: 10; }
+.menu {
+  position: fixed;
+  z-index: 11;
+  min-width: 190px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1c1f26;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: var(--ink);
+  font: inherit;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.menu button:hover { background: rgba(255, 255, 255, 0.08); }
+.menu button.danger { color: var(--bad); }
+
+/* ── adding something to the tree ─────────────────────────────────────────── */
+
+/* A path is typed, not chosen in a system panel: the panel takes the window
+   away and returns something that cannot be corrected without opening it
+   again. A field can be pasted into, edited and read back. */
+.prompt { padding: 0 12px 10px; display: flex; flex-direction: column; gap: 5px; }
+.prompt label { font-size: 10px; letter-spacing: 0.06em; color: var(--faint); }
+.prompt input {
+  height: 26px;
+  padding: 0 8px;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+  color: var(--ink);
+  font: 12px/1 var(--font);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.prompt input::placeholder { color: var(--faint); }
+
+/* It floats just above the readout rather than taking a row of its own: a
+   control that appears by pushing the list up moves the thing you were
+   reaching for. Kept mounted and faded, so it leaves as softly as it arrives. */
+.to-top-slot { position: relative; height: 0; }
+.to-top {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translate(-50%, 6px);
+  padding: 4px 12px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(30, 33, 40, 0.88);
+  backdrop-filter: blur(8px);
+  color: var(--dim);
+  font: 10.5px/1 var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease, color 120ms ease;
+}
+.to-top.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.to-top:hover { color: var(--ink); background: rgba(40, 44, 54, 0.92); }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: none; }
 }

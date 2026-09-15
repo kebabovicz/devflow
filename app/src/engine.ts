@@ -28,15 +28,7 @@ export interface Ticket {
     holder_pid_alive: boolean;
     stale: boolean;
   };
-  session: null | {
-    id: string;
-    session_id: string;
-    name: string | null;
-    status: string | null;
-    pid: number | null;
-    cwd: string;
-    live: boolean;
-  };
+  session: null | Session;
 }
 
 export interface EffortMap {
@@ -77,6 +69,18 @@ export interface Status {
   repos: Repo[];
 }
 
+/// A group is a name and a list of repositories. `folder`, when set, is a
+/// binding rather than an identity: repositories appearing under it join the
+/// group without being listed. A group with no folder holds whatever
+/// directories were added to it, from anywhere.
+export interface Group {
+  id: string;
+  name: string;
+  repos: string[];
+  folder: string | null;
+  open: boolean;
+}
+
 export const engineStatus = (paths: string[]) =>
   invoke<Status>("engine_status", { paths });
 
@@ -86,8 +90,34 @@ export const engineStatus = (paths: string[]) =>
 /// opens this window for, and they must be there before anything is configured.
 export const claudeAgents = () => invoke<Session[]>("claude_agents");
 
-export const discoverRepos = (folder: string) =>
-  invoke<string[]>("discover_repos", { folder });
+export const groupsLoad = () => invoke<{ groups: Group[] }>("groups_load");
+export const groupsSave = (groups: Group[]) =>
+  invoke<void>("groups_save", { groups: { groups } });
+export const groupRepos = (group: Group) => invoke<string[]>("group_repos", { group });
+export const readText = (path: string) => invoke<string>("read_text", { path });
+export const homeDir = () => invoke<string>("home_dir");
+
+export interface Limit {
+  kind: string;
+  group: string;
+  percent: number;
+  severity: string;
+  resets_at: string | null;
+  scope: string | null;
+}
+
+export interface Load {
+  sessions: number;
+  cpu_percent: number;
+  memory_mb: number;
+}
+
+export const sessionLoad = (pids: number[]) => invoke<Load>("session_load", { pids });
+
+/// The account's limits, asked of Claude Code over its control protocol. One
+/// short-lived session answers for every session shown, so this is polled on a
+/// slow clock of its own rather than with the tree.
+export const accountLimits = () => invoke<Limit[]>("account_limits");
 
 export const paneOpen = (session: string, rows: number, cols: number) =>
   invoke<number>("pane_open", { session, rows, cols });
