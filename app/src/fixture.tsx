@@ -75,7 +75,10 @@ const rows: Row[] = [
 
 function Fixture() {
   return (
-    <div className="app">
+    <div
+      className="app"
+      style={{ backgroundImage: "linear-gradient(135deg,#2f5b86,#13263a 55%,#28506e)" }}
+    >
       <header className="bar">
         <span className="brand">devflow</span>
         <span className="spacer" />

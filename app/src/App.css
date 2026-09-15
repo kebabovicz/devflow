@@ -14,7 +14,10 @@
 :root {
   --scrim: rgba(20, 22, 28, 0.42);
   --card: #15171d;
-  --column: rgba(0, 0, 0, 0.20);
+  /* No fill of its own: the column lies on the window's translucency the way
+     the title strip does. What separates it from the reading pane is that
+     pane's card and border, not a darker box behind the tree. */
+  --column: transparent;
   --ink: #f2f3f5;
   --dim: #b6b8c0;
   --faint: #8b8d97;
