@@ -37,10 +37,10 @@ export function AsideHead({
       <div className="title">
         <span className="caption">PROJECTS</span>
         <span className="actions">
-          <button title="New group" onClick={onAddGroup}>
+          <button aria-label="New group" onClick={onAddGroup}>
             <Icon d={FOLDER_PLUS} />
           </button>
-          <button title="Collapse everything" onClick={onCollapseAll}>
+          <button aria-label="Collapse everything" onClick={onCollapseAll}>
             <Icon d={COLLAPSE} />
           </button>
         </span>
@@ -101,10 +101,10 @@ export function AsideFoot({
             <em>cpu</em>
             <b>{load ? `${load.cpu_percent}%` : "—"}</b>
           </span>
-          <span
-            className="pair"
-            title="Summed resident memory — shared pages counted once per session, so read it as an upper bound"
-          >
+          {/* Summed resident memory: shared pages are counted once per
+              session, so it is an upper bound. Said here rather than in a
+              tooltip — the window has none. */}
+          <span className="pair">
             <em>mem</em>
             <b>{load ? `${(load.memory_mb / 1024).toFixed(1)} GB` : "—"}</b>
           </span>

@@ -326,7 +326,7 @@ export default function App() {
       <header className="bar" data-tauri-drag-region>
         <button
           className="fold"
-          title={collapsed ? "Show the projects" : "Hide the projects"}
+          aria-label={collapsed ? "Show the projects" : "Hide the projects"}
           aria-pressed={collapsed}
           onClick={fold}
         >
@@ -343,7 +343,7 @@ export default function App() {
       </header>
 
       {error && (
-        <div className="error" onClick={() => setError(null)} title="Click to dismiss">
+        <div className="error" onClick={() => setError(null)}>
           {error}
         </div>
       )}
@@ -518,8 +518,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       className="close"
-      title="Close the pane — a session keeps running"
-      aria-label="Close the pane"
+      aria-label="Close the pane — a session keeps running"
       onClick={onClick}
     >
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">

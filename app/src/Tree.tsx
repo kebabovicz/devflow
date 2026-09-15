@@ -60,12 +60,12 @@ function Counts({ waiting, working }: { waiting: number; working: number }) {
   return (
     <>
       {waiting > 0 && (
-        <span className="count waiting" title="waiting on you">
+        <span className="count waiting">
           <i /> {waiting}
         </span>
       )}
       {working > 0 && (
-        <span className="count working" title="sessions running here">
+        <span className="count working">
           <i /> {working}
         </span>
       )}
@@ -76,7 +76,7 @@ function Counts({ waiting, working }: { waiting: number; working: number }) {
 function Branch({ name, engine }: { name: string | null; engine: boolean }) {
   if (name === null) return <span className="nogit">no git</span>;
   return (
-    <span className={`branch ${engine ? "" : "no-engine"}`} title={engine ? undefined : "devflow is not set up here"}>
+    <span className={`branch ${engine ? "" : "no-engine"}`}>
       <BranchIcon /> {name}
     </span>
   );
@@ -165,7 +165,7 @@ export function TreeRow({
   if (row.kind === "ticket") {
     const t = row.ticket;
     return (
-      <div className={`node leaf ticket ${selected ? "on" : ""}`} onClick={onPick} title={t.title ?? t.id}>
+      <div className={`node leaf ticket ${selected ? "on" : ""}`} onClick={onPick}>
         <Indent depth={row.depth} />
         <span className="twist" />
         <span className={`mark dot ${ticketTone(t)}`} />
@@ -175,7 +175,7 @@ export function TreeRow({
         </span>
         {row.waiting && (
           <span className="right">
-            <span className="flag waiting" title={row.waiting}>
+            <span className="flag waiting">
               ?
             </span>
           </span>
@@ -194,11 +194,6 @@ export function TreeRow({
     <div
       className={`node leaf session ${selected ? "on" : ""} ${attachable ? "" : "external"}`}
       onClick={() => attachable && onPick()}
-      title={
-        attachable
-          ? s.cwd
-          : `${s.cwd} — started in a terminal of its own, so it can be watched but not opened here`
-      }
     >
       <Indent depth={row.depth} />
       <span className="twist" />
