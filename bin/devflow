@@ -384,14 +384,14 @@ status_human() {
     (.name) as $n |
     (if .engine then
        ((.counts | to_entries | map("\(.key)=\(.value)") | join(" "))
-        | if . == "" then "тикетов нет" else . end)
-     else "движок не заведён" end) as $t |
-    (.branch // "не git-репозиторий") as $b |
-    (if .questions_open > 0 then " · вопросов: \(.questions_open)" else "" end) as $q |
+        | if . == "" then "no tickets" else . end)
+     else "engine not set up" end) as $t |
+    (.branch // "not a repository") as $b |
+    (if .questions_open > 0 then " · questions: \(.questions_open)" else "" end) as $q |
     ([.maps[]?.tickets[]? | select(.contract.state == "draft")] | length) as $d |
-    (if $d > 0 then " · контрактов на одобрение: \($d)" else "" end) as $c |
+    (if $d > 0 then " · contracts to approve: \($d)" else "" end) as $c |
     ([.sessions[]? | select(.live)] | length) as $ls |
-    (if $ls > 0 then " · сессий: \($ls)" else "" end) as $s |
+    (if $ls > 0 then " · sessions: \($ls)" else "" end) as $s |
     "\($n)  [\($b)]  \($t)\($q)\($c)\($s)"
   '
 }

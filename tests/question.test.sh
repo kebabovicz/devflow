@@ -98,15 +98,15 @@ ck_grep() { # $1=desc $2=pattern $3=file
 
 echo "── add"
 setup
-ck "asking succeeds"            asked '.reason' question add 01-open --text "какой формат курсора?"
+ck "asking succeeds"            asked '.reason' question add 01-open --text "which cursor format?"
 ck_status "the ticket is blocked" blocked "$T/01-open.md"
 ck_grep "the heading records the state and the status to restore" \
   '^### Q1 · open · asked .* · was: open' "$T/01-open.md"
-ck_grep "the body is written verbatim" 'какой формат курсора\?' "$T/01-open.md"
+ck_grep "the body is written verbatim" 'which cursor format\?' "$T/01-open.md"
 
 setup
-ck "a finished ticket waits on nobody" not_live '.reason' question add 02-done --text "поздно"
-ck_rc "refusal is code 3" 3 question add 02-done --text "поздно"
+ck "a finished ticket waits on nobody" not_live '.reason' question add 02-done --text "too late"
+ck_rc "refusal is code 3" 3 question add 02-done --text "too late"
 
 setup
 ck "the status in progress is recorded, not lost" asked '.reason' question add 03-prog --text "?"
@@ -114,38 +114,38 @@ ck_grep "was: in progress" 'was: in progress' "$T/03-prog.md"
 
 echo "── add: a multi-line body from stdin"
 setup
-printf '**Нужно твоё решение по пагинации.**\n\n1. Курсор — стабильно при вставках.\n2. Смещение — проще.\n\nПредложение: 1.\n' \
+printf '**Ein Beschluss zur Seitengröße wird gebraucht.**\n\n1. Cursor — stabil beim Einfügen.\n2. Offset — einfacher.\n\nVorschlag: 1.\n' \
   | ( cd "$REPO" && "$CLI" question add 01-open --text - ) >/dev/null 2>&1
-ck_grep "the bold first line survives"  '^\*\*Нужно твоё решение по пагинации\.\*\*$' "$T/01-open.md"
-ck_grep "the numbered options survive"  '^2\. Смещение — проще\.$'                    "$T/01-open.md"
-ck_grep "the proposal survives"         '^Предложение: 1\.$'                          "$T/01-open.md"
+ck_grep "the bold first line survives"  '^\*\*Ein Beschluss zur Seitengröße wird gebraucht\.\*\*$' "$T/01-open.md"
+ck_grep "the numbered options survive"  '^2\. Offset — einfacher\.$'                    "$T/01-open.md"
+ck_grep "the proposal survives"         '^Vorschlag: 1\.$'                          "$T/01-open.md"
 
 # ── answering ───────────────────────────────────────────────────────────────
 
 echo "── answer"
 setup
-run question add 01-open --text "какой формат курсора?" >/dev/null 2>&1
-ck "answering succeeds"           answered '.reason' question answer 01-open --text "base64 от пары"
+run question add 01-open --text "which cursor format?" >/dev/null 2>&1
+ck "answering succeeds"           answered '.reason' question answer 01-open --text "base64 of the pair"
 ck_status "the prior status is restored, not guessed" open "$T/01-open.md"
 ck_grep "the heading now says answered" '^### Q1 · answered .* · asked ' "$T/01-open.md"
-ck_grep "the question body stays"       'какой формат курсора\?'        "$T/01-open.md"
-ck_grep "the answer is written"         'base64 от пары'                "$T/01-open.md"
+ck_grep "the question body stays"       'which cursor format\?'        "$T/01-open.md"
+ck_grep "the answer is written"         'base64 of the pair'                "$T/01-open.md"
 
 setup
 run question add 03-prog --text "?" >/dev/null 2>&1
-run question answer 03-prog --text "да" >/dev/null 2>&1
+run question answer 03-prog --text "yes" >/dev/null 2>&1
 ck_status "in progress is restored, not open" "in progress" "$T/03-prog.md"
 
 setup
-run question add 01-open --text "первый" >/dev/null 2>&1
-run question add 01-open --text "второй" >/dev/null 2>&1
-ck "answering one of two leaves one open" 1 '.still_open' question answer 01-open --text "ответ"
+run question add 01-open --text "first" >/dev/null 2>&1
+run question add 01-open --text "second" >/dev/null 2>&1
+ck "answering one of two leaves one open" 1 '.still_open' question answer 01-open --text "an answer"
 ck_status "the ticket stays blocked while one waits" blocked "$T/01-open.md"
 
 setup
-run question add 01-open --text "первый"  >/dev/null 2>&1
-run question add 01-open --text "второй"  >/dev/null 2>&1
-run question answer 01-open --question Q2 --text "по второму" >/dev/null 2>&1
+run question add 01-open --text "first"  >/dev/null 2>&1
+run question add 01-open --text "second"  >/dev/null 2>&1
+run question answer 01-open --question Q2 --text "on the second" >/dev/null 2>&1
 ck_grep "the named question is the one answered" '^### Q2 · answered' "$T/01-open.md"
 ck_grep "the other stays open"                   '^### Q1 · open'     "$T/01-open.md"
 
@@ -157,11 +157,11 @@ ck_rc "refusal is code 3"          3 question answer 01-open --text "x"
 
 echo "── drop"
 setup
-run question add 01-open --text "передумал спрашивать" >/dev/null 2>&1
+run question add 01-open --text "changed my mind about asking" >/dev/null 2>&1
 ck "dropping succeeds"             dropped '.reason' question drop 01-open
 ck_status "the status is restored" open "$T/01-open.md"
 ck_grep "the heading says dropped" '^### Q1 · dropped ' "$T/01-open.md"
-ck_grep "the body is kept as history" 'передумал спрашивать' "$T/01-open.md"
+ck_grep "the body is kept as history" 'changed my mind about asking' "$T/01-open.md"
 
 # ── how this reaches the rest of the engine ─────────────────────────────────
 

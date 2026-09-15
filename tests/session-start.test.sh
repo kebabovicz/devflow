@@ -161,8 +161,8 @@ ck_argv "sessions.worktree: true asks for a worktree" '\-w 01-ready'
 ck "and the answer says so" true '.worktree' session start 02-other
 
 setup false 0
-ck "the name can be overridden" started '.reason' session start 01-ready --name "рефакторинг"
-ck_argv "the given name is used" '\-n рефакторинг'
+ck "the name can be overridden" started '.reason' session start 01-ready --name "gröss-refactor"
+ck_argv "the given name is used" '\-n gröss-refactor'
 
 echo "── the claim"
 setup false 0

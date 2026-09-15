@@ -116,7 +116,7 @@ base=$(df_yml_section_value "$manifest" git base_branch 2>/dev/null) || base=""
 [ -n "$base" ] && [ "$branch" = "$base" ] && exit 0
 
 # Efforts whose map names this branch, in backticks — the form a map writes a
-# branch in ("Ветка работы — `feature/AIZHOL-493`"). A bare substring is not
+# branch in ("Work branch: `feature/ABC-42`"). A bare substring is not
 # enough: a map that happens to contain the English word "main" would arm the
 # gate for the main branch, and a gate that refuses on a coincidence is a gate
 # people switch off. A map that names its branch without backticks leaves the

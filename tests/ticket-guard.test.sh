@@ -25,7 +25,7 @@ setup() { # $1=branch named in map.md
   git -C "$REPO" init -q -b work 2>/dev/null
   git -C "$REPO" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init 2>/dev/null
   printf 'maps:\n  dir: .devflow/maps\n' > "$REPO/.devflow/project.yml"
-  printf '# alpha\n\nВетка работы — `%s`.\n' "${1:-work}" > "$E/map.md"
+  printf '# alpha\n\nWork branch: `%s`.\n' "${1:-work}" > "$E/map.md"
   # (the backtick form is what a map writes, and what the gate reads)
   mkdir -p "$REPO/src"
   printf 'code\n' > "$REPO/src/app.ts"
@@ -123,14 +123,14 @@ ck "prose that merely contains the word does not claim the branch" 0 "$REPO/src/
 
 setup work
 mk 01-ready open
-printf '# alpha\n\nРаботаем в ветке work, без кавычек.\n' > "$E/map.md"
+printf '# alpha\n\nWe work on branch work, unquoted.\n' > "$E/map.md"
 ck "a map that does not write its branch in backticks leaves the gate silent" 0 "$REPO/src/app.ts"
 
-setup feature/AIZHOL-431
+setup feature/ABC-431
 mk 01-ready open
-switch feature/AIZHOL-43
+switch feature/ABC-43
 ck "a shorter branch does not claim a longer one's map" 0 "$REPO/src/app.ts"
-switch feature/AIZHOL-431
+switch feature/ABC-431
 ck "the branch the map names does claim it" 2 "$REPO/src/app.ts"
 
 echo "── never on the base branch"

@@ -4,7 +4,7 @@ The map's last act: turn the spec and the design into work someone can take.
 
 **The engine CLI, written `devflow` below, ships with the plugin as `bin/devflow` in its root — the directory `${CLAUDE_SKILL_DIR}/../..` points at. It is not on PATH; invoke it by that path.**
 
-**`map.md` writes the work branch in backticks** — ``Ветка работы — `feature/ABC-42` ``. The stop gate and the ticket gate both find the effort that belongs to a working tree by reading that name out of the map, and the ticket gate only accepts the backticked form: a bare word in prose is not a branch reference.
+**`map.md` writes the work branch in backticks** — ``Work branch: `feature/ABC-42` ``, in whatever language the map is written in. The stop gate and the ticket gate both find the effort that belongs to a working tree by reading that name out of the map, and the ticket gate only accepts the backticked form: a bare word in prose is not a branch reference.
 
 ## `tickets/NN-slug.md`
 

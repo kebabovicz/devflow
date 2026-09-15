@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.42.1 — 2026-09-15
+
+- **`devflow status` answers in English.** Its human line was the one part of the plugin written in another language, which made it the one part a reader of this repository could not follow. The JSON never carried prose and is unchanged.
+- **The regression suites stopped carrying one project's ticket keys.** Branch fixtures named after a real tracker key are noise to everyone else reading the suite; they are generic now. Non-ASCII coverage stays — a name and a multi-line markdown question still travel through jq, awk and sed on their way into a ticket, because that is a thing that can break.
+
 ## 0.42.0 — 2026-09-15
 
 - **Finishing is two acts by two parties now, and an unattended loop can only do the first one.** A session that implements work and then marks it done has checked nothing — it is the same party on both sides of the verdict, which is exactly where autonomous runs quietly fail. `devflow ticket report <id> --commit <sha>` is the executor's half: the code is written, the acceptance boxes are ticked, and this commit carries it. It moves the ticket to `awaiting review`, drops the claim, and never writes `done`. `devflow ticket accept <id>` is the user's answer, and it is the only thing that writes `done`.

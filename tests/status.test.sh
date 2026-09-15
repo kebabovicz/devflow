@@ -29,19 +29,19 @@ printf 'maps:\n  dir: .devflow/maps\n' > "$FULL/.devflow/project.yml"
 
 mk_ticket() { # $1=file $2=status $3=blocked $4=extra-body
   cat > "$1" <<TICKET
-# 0${1##*/} — заголовок тикета
+# 0${1##*/} — ticket title
 
 Blocked by: $3
 Status: $2
 
 ## What it delivers
 
-тело
+body
 
 ## Acceptance
 
-- [x] первый критерий
-- [ ] второй критерий
+- [x] first criterion
+- [ ] second criterion
 ${4:-}
 TICKET
 }
@@ -51,11 +51,11 @@ mk_ticket "$FULL/.devflow/maps/alpha/tickets/02-b.md" todo none
 mk_ticket "$FULL/.devflow/maps/alpha/tickets/03-c.md" cancelled "01, 02"
 mk_ticket "$FULL/.devflow/maps/alpha/tickets/04-d.md" "in progress" "01"
 
-printf '# 01 — открытый вопрос\n\nType: research\nStatus: open\n' \
+printf '# 01 — an open question\n\nType: research\nStatus: open\n' \
   > "$FULL/.devflow/maps/alpha/issues/01-q.md"
-printf '# 02 — решённый вопрос\n\nType: research\nStatus: resolved\n' \
+printf '# 02 — a settled question\n\nType: research\nStatus: resolved\n' \
   > "$FULL/.devflow/maps/alpha/issues/02-q.md"
-printf '# beta\n\n## Destination\n\nещё не нарезана\n' \
+printf '# beta\n\n## Destination\n\nnot sliced yet\n' \
   > "$FULL/.devflow/maps/beta/map.md"
 
 # A git repo that never onboarded devflow.

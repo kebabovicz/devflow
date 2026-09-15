@@ -119,7 +119,7 @@ ck "no contract stops the work"  contract_unapproved '.reason' ticket take 03-ba
 ck "the refusal names the state" none '.contract'              ticket take 03-bare
 
 setup
-run contract approve 02-draft --by "кебабович" >/dev/null 2>&1
+run contract approve 02-draft --by "Ünïcode Reviewer" >/dev/null 2>&1
 ck "approval opens the ticket for work" taken '.reason' ticket take 02-draft
 
 echo "── the status gate still answers first where it is the better answer"
@@ -181,9 +181,9 @@ setup
 ck "approving a draft succeeds"     approved '.reason' contract approve 02-draft
 ck_state "the state becomes approved" approved 02-draft
 setup
-run contract approve 02-draft --by "кебабович" >/dev/null 2>&1
-ck_grep "who approved it is recorded" '^Contract: approved .* by кебабович$' "$T/02-draft.md"
-ck "status reports who approved"  "кебабович" \
+run contract approve 02-draft --by "Ünïcode Reviewer" >/dev/null 2>&1
+ck_grep "who approved it is recorded" '^Contract: approved .* by Ünïcode Reviewer$' "$T/02-draft.md"
+ck "status reports who approved"  "Ünïcode Reviewer" \
   '.repos[0].maps[0].tickets[] | select(.id=="02-draft") | .contract.by' status --json
 ck "status reports when"  "true" \
   '.repos[0].maps[0].tickets[] | select(.id=="02-draft") | (.contract.at != null)' status --json
@@ -201,7 +201,7 @@ echo "── the human line says a contract is waiting"
 setup
 got=$(run status 2>/dev/null | head -1)
 case "$got" in
-  *"контрактов на одобрение: 1"*) PASS=$((PASS+1)); printf '  ok   a draft is reported to a person, not only in JSON\n' ;;
+  *"contracts to approve: 1"*) PASS=$((PASS+1)); printf '  ok   a draft is reported to a person, not only in JSON\n' ;;
   *) FAIL=$((FAIL+1)); printf '  FAIL a draft is reported to a person (got %s)\n' "$got" ;;
 esac
 
