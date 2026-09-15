@@ -18,7 +18,10 @@
 #     work rather than to the window.
 #   * Escape hatch: take a ticket — one command, and the honest way out. For
 #     the case where that is wrong, DEVFLOW_ALLOW=1 in the session's
-#     environment disarms this hook.
+#     environment disarms this hook. Verified to work for a session started by
+#     hand; `claude --bg` does not pass the caller's environment to the session,
+#     so a background session cannot be disarmed that way and does not need to
+#     be — it reaches work through `session start`, which takes the ticket.
 #   * Honest limits: a write done through Bash (`cat > file`, `sed -i`) is not
 #     an Edit tool call and is not seen here. Nor is an edit in a directory the
 #     session did not start in. The gate raises the floor against forgetting to
@@ -128,7 +131,14 @@ EOF
 
 # The CLI ships with the plugin and is not on PATH, so the message names the
 # path that actually works from here rather than a command that may not resolve.
-CLI="$SELF_DIR/../bin/devflow"
+# Resolved rather than printed with a `..` in the middle: this path is meant to
+# be copied and run.
+CLI=$(cd "$SELF_DIR/.." 2>/dev/null && pwd)/bin/devflow
 
-echo "devflow ticket guard: no ticket is in progress for $branch, so this change belongs to nothing. Take one first — '$CLI ticket take <id>', or '$CLI session start <id>' to work it in its own session. Ready here: ${live% }. If this edit genuinely belongs to no ticket, start the session with DEVFLOW_ALLOW=1 in its environment." >&2
+# The bypass reaches a session started by hand — `DEVFLOW_ALLOW=1 claude` — and
+# measurably does NOT reach one started with `claude --bg`, which does not pass
+# the caller's environment through. That costs a dispatched session nothing: it
+# got here through `session start`, which takes the ticket first, so this gate
+# never speaks to it.
+echo "devflow ticket guard: no ticket is in progress for $branch, so this change belongs to nothing. Take one first — '$CLI ticket take <id>', or '$CLI session start <id>' to work it in its own session. Ready here: ${live% }. If this edit genuinely belongs to no ticket, restart the session as 'DEVFLOW_ALLOW=1 claude' (a background session cannot be disarmed that way — it takes its ticket through 'session start')." >&2
 exit 2

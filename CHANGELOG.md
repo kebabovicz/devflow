@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.41.1 — 2026-09-15
+
+- **The ticket gate's bypass says what it actually does.** Measured both ways against the installed plugin: `DEVFLOW_ALLOW=1 claude` disarms the gate, and the same variable in front of `claude --bg` does not — a background session does not inherit the caller's environment. The refusal said "start the session with DEVFLOW_ALLOW=1 in its environment", which is advice that silently fails for exactly the sessions the pult starts. It now names the form that works and says why a background session needs no bypass: it reaches work through `session start`, which takes the ticket first.
+- **The path in the refusal is resolved** instead of being printed with a `..` in the middle. It is a path meant to be copied and run.
+
 ## 0.41.0 — 2026-09-15
 
 - **devflow has a command line.** Until now the whole plugin was text a model reads and follows — which means every rule held exactly as well as the model remembered it. `bin/devflow` is the part that does not forget: `status`, `ticket take` / `release`, `contract draft` / `approve`, `question add` / `answer` / `drop`, `session start`. Every subcommand answers with a return code first and JSON second — 0 done, 1 bad invocation, 2 environment not ready, 3 a gate refused, 4 someone else holds it — because a consumer that parses prose and an engine that writes it drift apart on the first reworded sentence. The CLI is not on PATH; it is `bin/devflow` in the plugin root.
