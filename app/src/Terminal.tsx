@@ -20,6 +20,7 @@
 import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebglAddon } from "@xterm/addon-webgl";
 import { listen } from "@tauri-apps/api/event";
 import "@xterm/xterm/css/xterm.css";
 import { paneClose, paneOpen, paneResize, paneWrite } from "./engine";
@@ -53,13 +54,40 @@ export function TerminalPane({
       fontSize: 12,
       lineHeight: 1.2,
       allowProposedApi: true,
-      theme: { background: "#00000000", foreground: "#e6e6e6" },
+      // Opaque, and the same colour as the card it sits on. The GPU renderer
+      // below draws into its own canvas, where a transparent background costs
+      // a blend pass per frame for a translucency the solid card hides anyway.
+      theme: { background: "#15171d", foreground: "#e6e6e6" },
       cursorBlink: true,
       scrollback: 20000,
+      // One line per wheel notch is the default and reads as a stuck scroll on
+      // a trackpad. Three is what a terminal is normally driven at; the fast
+      // figure is what a modifier-held flick gets.
+      scrollSensitivity: 3,
+      fastScrollSensitivity: 12,
+      // Interpolated rather than jumped, which is the difference between
+      // "moved" and "moving".
+      smoothScrollDuration: 120,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(element);
+
+    // Drawing on the GPU rather than through the DOM. This is what a terminal
+    // feels slow without: the DOM renderer rebuilds rows as elements, and a
+    // full-screen interface repainting at speed is exactly its worst case.
+    //
+    // It can fail — an older machine, a driver that refuses, a context the
+    // system takes back under memory pressure — and the answer to all three is
+    // the same: drop the addon and let the DOM renderer carry on. A terminal
+    // that renders slowly is usable; one that renders nothing is not.
+    try {
+      const webgl = new WebglAddon();
+      term.loadAddon(webgl);
+      webgl.onContextLoss(() => webgl.dispose());
+    } catch {
+      // Left on the DOM renderer deliberately.
+    }
 
     // Fit, and tell the session only when the answer actually changed. The
     // `fitting` flag is what breaks the loop: everything the fit does to the
