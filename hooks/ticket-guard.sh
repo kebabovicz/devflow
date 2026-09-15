@@ -57,6 +57,36 @@ map_dir=$(df_maps_dir "$manifest")
 maps_path="$maps_root/$map_dir"
 [ -d "$maps_path" ] || exit 0
 
+# ── the state headers belong to the engine ──────────────────────────────────
+#
+# A ticket's `Status:`, `Contract:`, `Reported:` and `Accepted:` lines are what
+# the pult reads and what every other gate is armed by. Typed by hand they are
+# just markdown: a session can write `Status: done` on work nobody accepted and
+# the board fills with green that means nothing. The commands are how they move.
+#
+# Only the header lines. Everything else in a ticket — what it delivers, the
+# design notes, a question's body — is prose a person and a session both edit
+# freely, and guarding that would make the map unusable.
+#
+# The payload is what the tool is about to write: `new_string` for an edit,
+# `content` for a whole-file write. A header that is not changing is not
+# blocked, so re-writing a ticket with its current status intact goes through,
+# and so does creating one that did not exist.
+if printf '%s' "$file" | grep -qE '/tickets/[^/]+\.md$' && [ -f "$file" ]; then
+  payload=$(printf '%s' "$input" \
+            | jq -r '.tool_input.new_string // .tool_input.content // empty' 2>/dev/null)
+  if [ -n "$payload" ]; then
+    for key in Status Contract Reported Accepted; do
+      want=$(printf '%s\n' "$payload" | sed -nE "s/^$key:[[:space:]]*//p" | head -1)
+      [ -n "$want" ] || continue
+      have=$(df_header "$file" "$key" 2>/dev/null) || have=""
+      [ "$want" = "$have" ] && continue
+      echo "devflow ticket guard: '$key' on $(basename "$file" .md) is engine state, not text to type. It moves with a command — take, report, accept, contract draft/approve, question add/answer — so that what the board shows is what actually happened. Editing the rest of the ticket is untouched. Deliberate exception: DEVFLOW_ALLOW=1 in the session's environment." >&2
+      exit 2
+    done
+  fi
+fi
+
 # The map is how a ticket gets taken, a contract gets drafted and a question
 # gets answered. Guarding those edits would make the gate impossible to satisfy.
 case "$file" in

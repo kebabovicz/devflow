@@ -61,6 +61,22 @@ devflow — engine commands for devflow-managed repositories
       not on PATH or reports no session id — in that last case the claim it made
       is given back.
 
+  devflow ticket report <ref> --commit <sha> [--owner <name>] [--json]
+      The executor's mark: the work is written, the acceptance boxes are ticked,
+      and this commit carries it. Moves the ticket to `awaiting review` and
+      drops the claim. It never writes `done` — reporting is a claim, and a
+      claim is not an acceptance.
+
+      Refuses (code 3) without a commit that exists in this repository, with
+      acceptance criteria left unticked, or on a ticket nobody took. Refuses
+      (code 4) when a different session holds the claim.
+
+  devflow ticket accept <ref> [--by <name>] [--json]
+      The user's act: the reported work was looked at and it is done. Moves the
+      ticket to `done`, recording when and by whom. A session does not run this
+      for itself. Refuses (code 3) when nothing has been reported, (code 4)
+      when a session still holds the claim.
+
   devflow contract draft <ref> [--delivers <md|->] [--acceptance <md|->] [--json]
       Write the ticket's contract — what it delivers and how anyone will know it
       is done — and mark it a draft awaiting a person. Either flag reads stdin
@@ -328,6 +344,9 @@ status_ticket() {
     --argjson lock "$lock_json" \
     --argjson session "$session_json" \
     --arg c_state "$(df_contract_state "$f")" \
+    --arg a_state "$(df_accept_state "$f")" \
+    --arg r_hdr "$(df_header "$f" Reported 2>/dev/null)" \
+    --arg a_hdr "$(df_header "$f" Accepted 2>/dev/null)" \
     --arg c_at "$(df_contract_meta "$f" at)" \
     --arg c_by "$(df_contract_meta "$f" by)" \
     '{
@@ -343,6 +362,9 @@ status_ticket() {
          at: (if $c_at == "" then null else $c_at end),
          by: (if $c_by == "" then null else $c_by end)
        },
+       acceptance_state: $a_state,
+       reported: (if $r_hdr == "" then null else $r_hdr end),
+       accepted: (if $a_hdr == "" then null else $a_hdr end),
        lock: $lock,
        session: $session
      }'
@@ -775,6 +797,156 @@ question_close() { # $1=mode(answer|drop) $2..=args
        '{ticket: $id, question: $q, still_open: $still, status: $restored}')"
 }
 
+# ── the acceptance boundary ──────────────────────────────────────────────────
+#
+# Finishing is two acts by two parties, and collapsing them is how a board fills
+# with work nobody checked. The executor reports: the code is written, the boxes
+# are ticked, here is the commit. The user accepts: I looked, it is done. Only
+# the second one writes `done`.
+
+cmd_ticket_report() {
+  local ref="" owner="" commit="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --owner) owner="${2:-}"; shift 2 ;;
+      --commit) commit="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow ticket report: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow ticket report: which ticket?\n' >&2; return 1; }
+  [ -n "$commit" ] || {
+    printf 'devflow ticket report: --commit <sha> is required — a report without a commit is a claim with nothing behind it\n' >&2
+    return 1
+  }
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local raw norm
+  raw=$(df_header "$file" "Status") || raw=""
+  norm=$(df_status_norm "$raw")
+  case "$norm" in
+    "in progress"|blocked) ;;
+    "awaiting review")
+      ticket_result 3 already_reported "$id was already reported — it is waiting to be accepted" ;;
+    done|cancelled)
+      ticket_result 3 not_live "$id is '$raw' — there is nothing left to report" ;;
+    *)
+      ticket_result 3 not_started "$id is '$raw' — work is reported on a ticket somebody took" ;;
+  esac
+
+  # The commit is what makes the report checkable. `awaiting review` used to mean
+  # implemented-and-uncommitted; with the acceptance step it means
+  # implemented-committed-and-unaccepted, and the sha is how anyone looks.
+  if ! git -C "$DF_REPO" cat-file -e "${commit}^{commit}" 2>/dev/null; then
+    ticket_result 3 no_such_commit \
+      "$DF_REPO has no commit $commit — report the commit that carries this ticket's work" \
+      "$(jq -n --arg c "$commit" '{commit: $c}')"
+  fi
+  commit=$(git -C "$DF_REPO" rev-parse --short "$commit" 2>/dev/null) || true
+
+  local counts total ticked
+  counts=$(df_acceptance_counts "$file"); total=${counts%% *}; ticked=${counts##* }
+  if [ "${total:-0}" -gt 0 ] && [ "${ticked:-0}" -lt "${total:-0}" ]; then
+    ticket_result 3 acceptance_unticked \
+      "$id has $ticked of $total acceptance criteria ticked — the boxes are the claim being made, so tick what is true before reporting" \
+      "$(jq -n --argjson t "${total:-0}" --argjson c "${ticked:-0}" \
+         '{acceptance: {total: $t, checked: $c}}')"
+  fi
+
+  # Only the holder reports. A ticket taken by one session and reported by
+  # another is two sessions in one tree, which is what the claim exists to stop.
+  local lock; lock=$(df_lock_dir "$file")
+  if [ -d "$lock" ]; then
+    local held; held=$(cat "$lock/owner" 2>/dev/null || echo "")
+    [ -n "$owner" ] || owner="$held"
+    if [ -n "$held" ] && [ "$held" != "$owner" ]; then
+      ticket_result 4 not_holder \
+        "$id is held by $held, not by $owner — the session doing the work is the one that reports it" \
+        "$(jq -n --arg h "$held" --arg o "$owner" '{holder: $h, owner: $o}')"
+    fi
+  fi
+  [ -n "$owner" ] || owner="$(hostname -s 2>/dev/null || echo host):$PPID"
+
+  local now; now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  if ! df_set_header "$file" "Reported" "$now by $owner commit $commit"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+  if ! df_set_header "$file" "Status" "awaiting review"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+  # The claim goes last: until the status says the work is handed over, the lock
+  # is what keeps a second session out.
+  [ -d "$lock" ] && rm -rf "$lock"
+
+  ticket_result 0 reported "$id reported by $owner at $commit — waiting to be accepted" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg o "$owner" --arg c "$commit" --arg at "$now" \
+       '{ticket: $id, path: $p, owner: $o, commit: $c, at: $at, status: "awaiting review"}')"
+}
+
+cmd_ticket_accept() {
+  local ref="" by="" json=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --by) by="${2:-}"; shift 2 ;;
+      --json) json=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      -*) printf 'devflow ticket accept: unknown option %s\n' "$1" >&2; return 1 ;;
+      *) ref="$1"; shift ;;
+    esac
+  done
+  [ -n "$ref" ] || { printf 'devflow ticket accept: which ticket?\n' >&2; return 1; }
+  [ -n "$by" ] || by="$(hostname -s 2>/dev/null || echo host):$(id -un 2>/dev/null || echo user)"
+
+  local maps file id
+  ticket_context; maps="$DF_MAPS"
+  ticket_resolve "$ref"; file="$DF_TICKET"
+  id=$(basename "$file" .md)
+
+  local state; state=$(df_accept_state "$file")
+  case "$state" in
+    accepted) ticket_result 3 already_accepted "$id was already accepted" ;;
+    none)
+      ticket_result 3 not_reported \
+        "nobody has reported $id finished — 'devflow ticket report $id --commit <sha>' comes first" ;;
+  esac
+
+  # Still held means somebody is still working. Accepting under a live claim
+  # would close a ticket out from under the session doing it.
+  local lock; lock=$(df_lock_dir "$file")
+  if [ -d "$lock" ]; then
+    local held; held=$(cat "$lock/owner" 2>/dev/null || echo unknown)
+    ticket_result 4 still_held \
+      "$id is still claimed by $held — a ticket being worked is not a ticket to accept" \
+      "$(jq -n --arg h "$held" '{holder: $h}')"
+  fi
+
+  # Unticked boxes do not refuse here. The executor's claim was checked when it
+  # was made; what the user accepts is their call, and it is reported rather
+  # than enforced.
+  local counts total ticked
+  counts=$(df_acceptance_counts "$file"); total=${counts%% *}; ticked=${counts##* }
+
+  local now; now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  if ! df_set_header "$file" "Accepted" "$now by $by"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+  if ! df_set_header "$file" "Status" "done"; then
+    ticket_result 2 write_failed "could not write $file"
+  fi
+
+  ticket_result 0 accepted "$id accepted by $by" \
+    "$(jq -n --arg id "$id" --arg p "$file" --arg by "$by" --arg at "$now" --arg was "$state" \
+          --argjson t "${total:-0}" --argjson c "${ticked:-0}" \
+       '{ticket: $id, path: $p, by: $by, at: $at, was: $was, status: "done",
+         acceptance: {total: $t, checked: $c}}')"
+}
+
 # ── contract ─────────────────────────────────────────────────────────────────
 #
 # The contract is not a new document. A ticket already states what it delivers
@@ -1056,6 +1228,8 @@ cmd_ticket() {
   case "${1:-}" in
     take) shift; cmd_ticket_take "$@" ;;
     release) shift; cmd_ticket_release "$@" ;;
+    report) shift; cmd_ticket_report "$@" ;;
+    accept) shift; cmd_ticket_accept "$@" ;;
     -h|--help|"") usage ;;
     *) printf 'devflow ticket: unknown subcommand: %s\n' "$1" >&2; return 1 ;;
   esac

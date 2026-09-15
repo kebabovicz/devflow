@@ -318,6 +318,36 @@ df_contract_state() {
   if [ -z "$first" ]; then printf 'none'; else printf '%s' "$first"; fi
 }
 
+# ── the acceptance boundary ─────────────────────────────────────────────────
+
+# How far a ticket has got past implementation: accepted | reported | none, or
+# `legacy` for a ticket that reads `done` with no record of who accepted it.
+#
+# `legacy` exists for the same reason it does on contracts: every ticket closed
+# before these headers existed says `done` and nothing else. Reporting them as
+# accepted would invent a person who never looked; refusing them would rewrite
+# history nobody asked to rewrite.
+# $1=ticket file
+df_accept_state() {
+  if grep -qE '^Accepted:' "$1" 2>/dev/null; then printf 'accepted'; return; fi
+  if grep -qE '^Reported:' "$1" 2>/dev/null; then printf 'reported'; return; fi
+  if [ "$(df_status_norm "$(df_header "$1" Status 2>/dev/null)")" = "done" ]; then
+    printf 'legacy'; return
+  fi
+  printf 'none'
+}
+
+# Acceptance checklist of a ticket: total items and ticked ones, space separated.
+# The boxes are the executor's claim, never a verification that ran.
+# $1=ticket file
+df_acceptance_counts() {
+  local body total ticked
+  body=$(df_section_body "$1" "Acceptance" 2>/dev/null) || body=""
+  total=$(printf '%s\n' "$body" | grep -cE '^[[:space:]]*- \[.\]') || total=0
+  ticked=$(printf '%s\n' "$body" | grep -cE '^[[:space:]]*- \[[xX]\]') || ticked=0
+  printf '%s %s' "${total:-0}" "${ticked:-0}"
+}
+
 # When a contract was approved and by whom. The whole record lives on the one
 # header line — `Contract: approved <iso> by <who>` — so a grep for the state
 # and a read for the provenance never disagree.

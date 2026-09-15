@@ -16,6 +16,8 @@ Numbered from `01` in dependency order — blockers first.
 Blocked by: 02, 03        <!-- or: none — can start immediately -->
 Status: open | in progress | awaiting review | done | blocked
 Contract: draft           <!-- approved by a person before work starts -->
+Reported: <iso> by <who> commit <sha>   <!-- written by `ticket report` -->
+Accepted: <iso> by <who>                <!-- written by `ticket accept` -->
 Tracker: ABC-42           <!-- added only after an approved publish -->
 
 ## What it delivers
@@ -76,7 +78,7 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 
 **Finding the tickets it concerns is a graph walk, not a guess.** Take the current ticket's number, collect every ticket whose `Blocked by` names it, then every ticket whose `Blocked by` names one of those, and so on to the end of the chain. Those are the tickets downstream of this decision — the ones whose ground just moved. Matching by title or by topic misses exactly the case that matters, where the affected ticket is two steps away and named after something else.
 
-**An unanswered question makes the ticket un-takeable**: `/devflow:build` marks it `Status: blocked` and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
+**An unanswered question makes the ticket un-takeable**: filing one blocks the ticket, so `/devflow:build` skips it and moves on rather than guessing, `/devflow:task` puts the question to the user before starting. Answering one is a design decision — it belongs to `/devflow:map`, and if the answer changes the design, `design.md` changes with it.
 
 ## The contract
 
@@ -88,9 +90,21 @@ So: say it out loud, write it into the ticket it concerns under *Open questions*
 
 Tickets cut before this header existed carry no `Contract:` line. Both their sections are filled and the slicing they came from was reviewed, so they stay takeable; anything reading them sees the state `legacy`, which is the truth — reviewed once, but not by this gate.
 
+## Finishing is two acts
+
+An executor reporting its own work finished has checked nothing — it is the same party on both sides. So finishing is split, and the two halves are different commands run by different people.
+
+`devflow ticket report <ticket> --commit <sha>` is the executor's. It says the code is written, the acceptance boxes are ticked, and this commit carries it; it refuses on an unticked box or a commit the repository does not have. It moves the ticket to `awaiting review` and drops the claim. It never writes `done`.
+
+`devflow ticket accept <ticket>` is the user's answer. It writes `done` and records who accepted and when. A session does not run it — `guard.sh` refuses, and the `DEVFLOW_ALLOW=1` prefix is what the user's explicit yes looks like.
+
+**The unattended loop reports; it does not accept.** A run of ten tickets ends with ten waiting to be accepted, not ten done. That is the point: the loop checked its own work and nothing else has.
+
+A ticket closed before these headers existed carries neither, and reads `legacy` — closed by whatever the rule was then, not by this one. Nothing rewrites it.
+
 ## Statuses
 
-`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **implemented, uncommitted, waiting for the user's verdict**: `/devflow:task` sets it the moment it presents the finished work and the proposed commit message, because asking before committing is the rule, and a session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — committed, checklist ticked. `blocked` — an unanswered question or a gap in the design stopped it; the loop set this and moved on.
+`open` — ready to take once its blockers are done. `in progress` — a session is implementing it; the stop gate reads this as "an iteration is in flight". `awaiting review` — **reported and waiting to be accepted**: `devflow ticket report` sets it, records who reported it against which commit, and drops the claim. A session stopping in that state is handing over, not dying. The stop gate lets it pass; `/devflow:build` never takes it — a ticket waiting on a human does not belong to an unattended loop. `done` — **accepted**: a person looked at the reported work and said so, and `devflow ticket accept` wrote the `Accepted:` line. A session never writes this status. `blocked` — an unanswered question or a gap in the design stopped it; the loop set this and moved on.
 
 **Write the canonical value, accept its synonyms when reading.** Tickets in the wild carry `todo` for `open` and `awaiting` for `awaiting review` — a ticket written before this list settled, or by hand. Anything reading a ticket treats those as the same state; anything writing one writes the canonical word above. A status outside this list is shown as-is and never silently reinterpreted: an unknown word is a ticket to look at, not a ticket to skip.
 
