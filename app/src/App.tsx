@@ -183,7 +183,16 @@ export default function App() {
               <div className="pane-head">
                 <span className="id">{selected.name ?? selected.id}</span>
                 <span className="where">{selected.cwd}</span>
-                <button onClick={() => setSelected(null)}>close</button>
+                <button
+                  className="close"
+                  title="Close the pane — the session keeps running"
+                  aria-label="Close the pane"
+                  onClick={() => setSelected(null)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M1.5 1.5 L10.5 10.5 M10.5 1.5 L1.5 10.5" />
+                  </svg>
+                </button>
               </div>
               <TerminalPane
                 key={selected.session_id}

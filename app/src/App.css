@@ -156,16 +156,30 @@ html, body, #root {
   border-bottom: 1px solid var(--line);
 }
 .pane-head .where { flex: 1; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pane-head button {
-  background: var(--raise);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--dim);
-  font: inherit;
-  padding: 2px 8px;
+/* A close affordance should be quiet: it is not the thing to reach for, and a
+   framed button reads as one. Grey until pointed at. */
+.pane-head .close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--faint);
   cursor: pointer;
 }
-.pane-head button:hover { color: var(--ink); }
+.pane-head .close svg {
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  fill: none;
+}
+.pane-head .close:hover { color: #ffffff; }
+.pane-head .close:active { color: var(--dim); }
+.pane-head .close:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
 
 /* The pane clips; the terminal sizes itself to what is left. Padding lives on
    this element because that is what the fit addon measures, so the rows it
