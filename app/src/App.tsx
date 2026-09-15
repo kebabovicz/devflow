@@ -179,13 +179,16 @@ export default function App() {
     return m;
   }, [status]);
 
-  const live = useMemo(
-    () =>
-      sessions
-        .filter((s) => s.live)
-        .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id)),
-    [sessions],
-  );
+  // Every session, running or finished. A finished background session keeps its
+  // conversation and reopens on attach — measured, not assumed — so dropping it
+  // here was throwing away most of what the window is for. Running ones come
+  // first; the rest keep their names in order.
+  const live = useMemo(() => {
+    const rank = (s: Session) => (s.status === "busy" ? 0 : s.live ? 1 : 2);
+    return [...sessions].sort(
+      (a, b) => rank(a) - rank(b) || (a.name ?? a.id).localeCompare(b.name ?? b.id),
+    );
+  }, [sessions]);
 
 
 

@@ -544,9 +544,9 @@ html, body, #root {
   bottom: 9px;
   transform: translate(-50%, 6px);
   padding: 4px 12px;
-  border: 1px solid var(--line);
+  border: none;
   border-radius: 12px;
-  background: rgba(30, 33, 40, 0.82);
+  background: rgba(30, 33, 40, 0.88);
   backdrop-filter: blur(8px);
   color: var(--dim);
   font: 10.5px/1 var(--font);
@@ -557,7 +557,7 @@ html, body, #root {
   transition: opacity 160ms ease, transform 160ms ease, color 120ms ease;
 }
 .to-top.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-.to-top:hover { color: var(--ink); border-color: var(--dim); }
+.to-top:hover { color: var(--ink); background: rgba(40, 44, 54, 0.92); }
 @media (prefers-reduced-motion: reduce) {
   .to-top { transition: none; }
 }
